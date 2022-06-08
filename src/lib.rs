@@ -1,7 +1,9 @@
 pub mod tiler {
     use glob::{glob, GlobError};
-    use image::{GenericImageView, ImageBuffer, Rgba, RgbaImage, DynamicImage, imageops::FilterType};
-    use std::{path::PathBuf, collections::HashMap, fmt::format};
+    use image::{
+        imageops::FilterType, DynamicImage, GenericImageView, ImageBuffer, Rgba, RgbaImage,
+    };
+    use std::{collections::HashMap, fs, path::PathBuf};
 
     const IMAGE_TILE_WIDTH: i32 = 512;
     const IMAGE_TILE_HEIGHT: i32 = 512;
@@ -124,15 +126,23 @@ pub mod tiler {
         output_imgbuf
     }
 
-    fn insert_image(souce_image: ImageBuffer<Rgba<u8>, Vec<u8>>, inserted_image: ImageBuffer<Rgba<u8>, Vec<u8>>, x_offset: u32, y_offset: u32){
-
-    }
+    // fn insert_image(
+    //     souce_image: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    //     inserted_image: ImageBuffer<Rgba<u8>, Vec<u8>>,
+    //     x_offset: u32,
+    //     y_offset: u32,
+    // ) {
+    // }
 
     pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &str) {
+        // clean output directory
+        fs::remove_dir_all(output_dir).unwrap();
+        fs::create_dir(output_dir).unwrap();
+
         let mut filenums_map = HashMap::new();
 
         let mut rendered_output_tiles_map = HashMap::new();
-       
+
         for file in &input_files {
             //> fill filename_and_numbers_vec
                 let mut filename_and_numbers_vec: Vec<FilenameAndNumbers> = Vec::new();
@@ -150,27 +160,17 @@ pub mod tiler {
                 });
 
             //<> fill hashmap
-                filenums_map.insert((x,z), file);
+                filenums_map.insert((x, z), file);
             //<
         }
-        
 
-        for ((x, y), pathbuf) in &filenums_map{
-
+        for ((x, y), _) in &filenums_map {
             // determine coords of output tile
-            let output_tile_x = if x%2 == 0{
-                *x
-            } else{
-                *x-1
-            };
-            let output_tile_y = if y%2 == 0{
-                *y
-            } else{
-                *y-1
-            };
+            let output_tile_x = if *x < 0 { (*x - 1) / 2 } else { *x / 2 };
+            let output_tile_y = if *y < 0 { (*y - 1) / 2 } else { *y / 2 };
 
             //skip any already rendered tiles
-            if rendered_output_tiles_map.contains_key(&(output_tile_x, output_tile_y)){
+            if rendered_output_tiles_map.contains_key(&(output_tile_x, output_tile_y)) {
                 continue;
             }
 
@@ -182,22 +182,21 @@ pub mod tiler {
 
             //> convert 4 images into one big image
                 // for the 4 sectors of the new tile
-                for x_sector in 0..=1{
-                    for y_sector in 0..=1{
+                for x_sector in 0..=1 {
+                    for y_sector in 0..=1 {
+                        let real_x = output_tile_x * 2 + x_sector;
+                        let real_y = output_tile_y * 2 + y_sector;
 
-                        let real_x = output_tile_x + x_sector;
-                        let real_y = output_tile_y + y_sector;
-
-                        match filenums_map.get(&(real_x,real_y)){
+                        match filenums_map.get(&(real_x, real_y)) {
                             Some(path) => {
                                 let input_tile_img = image::open(&path).unwrap();
 
                                 // transfer image
-                                for x in 0..IMAGE_TILE_WIDTH{
-                                    for y in 0..IMAGE_TILE_HEIGHT{
-
+                                for x in 0..IMAGE_TILE_WIDTH {
+                                    for y in 0..IMAGE_TILE_HEIGHT {
                                         // get pixel from tile image
-                                        let pixel = input_tile_img.get_pixel(x.try_into().unwrap(), y.try_into().unwrap());
+                                        let pixel = input_tile_img
+                                            .get_pixel(x.try_into().unwrap(), y.try_into().unwrap());
 
                                         // calculate where pixel should go on output image
                                         let output_pixel_x = x + (x_sector * IMAGE_TILE_WIDTH);
@@ -208,10 +207,9 @@ pub mod tiler {
                                             output_pixel_z.try_into().unwrap(),
                                             pixel,
                                         )
-
                                     }
                                 }
-                            },
+                            }
                             None => continue,
                         }
                     }
@@ -226,15 +224,15 @@ pub mod tiler {
                 );
 
             //<> save file
-                let output_tile_filename = (output_tile_x/2).to_string() + "," + &(output_tile_y/2).to_string() + ".png";
-                println!("output_tile_filename: {}",output_tile_filename);
-                dynamic.save(output_dir.to_owned() + &output_tile_filename).expect("failed to save file");
+                let output_tile_filename =
+                    output_tile_x.to_string() + "," + &output_tile_y.to_string() + ".png";
+                dynamic
+                    .save(output_dir.to_owned() + &output_tile_filename)
+                    .expect("failed to save file");
             //<
-            
+
             // mark output image tile as rendered
             rendered_output_tiles_map.insert((output_tile_x, output_tile_y), true);
         }
-
-            
     }
 }
