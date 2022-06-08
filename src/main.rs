@@ -51,8 +51,6 @@ struct FilenameAndNumbers {
 }
 
 fn main() {
-    println!("Hello, world!");
-
     let files = get_files_in_dir("./input", "").unwrap();
 
     if files.len() == 0 {
@@ -71,7 +69,7 @@ fn main() {
 
     // find max and min dimensions
     for file in &files {
-        println!("{}", file.file_stem().unwrap().to_str().unwrap());
+        // println!("{}", file.file_stem().unwrap().to_str().unwrap());
 
         let file_name = file.file_stem().unwrap().to_str().unwrap();
         let split: Vec<&str> = file_name.split(",").collect();
@@ -99,7 +97,7 @@ fn main() {
         }
     }
 
-    println!("{:?}", bounds);
+    // println!("{:?}", bounds);
 
     let xdiff = bounds.max_x - bounds.min_x + 1;
     let zdiff = bounds.max_z - bounds.min_z + 1;
@@ -119,11 +117,11 @@ fn main() {
         let x_sector = (file_struc.x + -bounds.min_x);
         let z_sector = (file_struc.z + -bounds.min_z);
 
-        println!("file_struc.x: {}", file_struc.x);
-        println!("file_struc.z: {}", file_struc.z);
+        // println!("file_struc.x: {}", file_struc.x);
+        // println!("file_struc.z: {}", file_struc.z);
 
-        println!("x_sector: {}", x_sector);
-        println!("z_sector: {}", z_sector);
+        // println!("x_sector: {}", x_sector);
+        // println!("z_sector: {}", z_sector);
 
         // for every pixel
         for x in 0..image_tile_width {
@@ -155,19 +153,15 @@ fn main() {
     // Write the contents of this image to the Writer in PNG format.
     output_imgbuf.save("./test.png").unwrap();
 
-    let img = image::open(&files[0]).unwrap();
+    // // The dimensions method returns the images width and height.
+    // println!("dimensions {:?}", img.dimensions());
 
-    // The dimensions method returns the images width and height.
-    println!("dimensions {:?}", img.dimensions());
+    // // The color method returns the image's `ColorType`.
+    // println!("{:?}", img.color());
 
-    // The color method returns the image's `ColorType`.
-    println!("{:?}", img.color());
+    // // let x_offset = (-bounds.max_x + bounds.min_x.abs()) -1;
 
-    // let x_offset = (-bounds.max_x + bounds.min_x.abs()) -1;
-
-    println!("x_offset: {}", -bounds.min_x * image_tile_width);
-
-    let pixel = Rgba([0, 0, 0, 0]);
+    // println!("x_offset: {}", -bounds.min_x * image_tile_width);
 
     // positive Z is South.
     // positive X is East
