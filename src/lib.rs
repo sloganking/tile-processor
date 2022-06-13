@@ -5,8 +5,8 @@ pub mod tiler {
     };
     use std::{collections::HashMap, fs, path::PathBuf};
 
-    const IMAGE_TILE_WIDTH: i32 = 512;
-    const IMAGE_TILE_HEIGHT: i32 = 512;
+    const IMAGE_TILE_WIDTH: i32 = 256;
+    const IMAGE_TILE_HEIGHT: i32 = 256;
 
     #[derive(Debug)]
     struct Bounds {
@@ -136,7 +136,9 @@ pub mod tiler {
 
     pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &str) {
         // clean output directory
-        fs::remove_dir_all(output_dir).unwrap();
+        if PathBuf::from(output_dir).is_dir() {
+            fs::remove_dir_all(output_dir).unwrap();
+        }
         fs::create_dir(output_dir).unwrap();
 
         let mut filenums_map = HashMap::new();
@@ -233,6 +235,80 @@ pub mod tiler {
 
             // mark output image tile as rendered
             rendered_output_tiles_map.insert((output_tile_x, output_tile_y), true);
+        }
+    }
+
+    pub fn image_to_tiles(image_path: &str, output_dir: &str) {
+        // clear any existing output_dir
+        if PathBuf::from(output_dir).is_dir() {
+            fs::remove_dir_all(output_dir).unwrap();
+        }
+        fs::create_dir(output_dir).unwrap();
+
+        let source_image = image::open(image_path).unwrap();
+        let out_tile_width = 256;
+        let out_tile_height = 256;
+
+        let num_x_tiles = if source_image.width() % out_tile_width == 0 {
+            source_image.width() / out_tile_width
+        } else {
+            (source_image.width() / out_tile_width) + 1
+        };
+
+        let num_y_tiles = if source_image.height() % out_tile_height == 0 {
+            source_image.height() / out_tile_height
+        } else {
+            (source_image.height() / out_tile_height) + 1
+        };
+
+        let mut tile_image = RgbaImage::new(out_tile_width, out_tile_height);
+
+        // for every sector in source image
+        for sector_y in 0..num_y_tiles {
+            for sector_x in 0..num_x_tiles {
+                // for every pixel in new tile
+                for y in 0..out_tile_height {
+                    for x in 0..out_tile_width {
+                        // calculate where pixel is in source image
+                        let souce_x = out_tile_width * sector_x + x;
+                        let souce_y = out_tile_width * sector_y + y;
+
+                        let pixel =
+                            if souce_x < source_image.width() && souce_y < source_image.height() {
+                                source_image.get_pixel(souce_x, souce_y)
+                            } else {
+                                Rgba([0, 0, 0, 0])
+                            };
+
+                        tile_image.put_pixel(x, y, pixel)
+                    }
+                }
+
+                // save file
+                let output_tile_filename =
+                    sector_x.to_string() + "," + &sector_y.to_string() + ".png";
+                tile_image
+                    .save(output_dir.to_owned() + &output_tile_filename)
+                    .expect("failed to save file");
+            }
+        }
+    }
+
+    pub fn image_to_tiles_recursive(image_path: &str, output_dir: &str) {
+        image_to_tiles(image_path, &(output_dir.to_owned() + "0/"));
+
+        let mut count = 0;
+        while get_files_in_dir(&(output_dir.to_owned() + &count.to_string() + "/"), "")
+            .unwrap()
+            .len()
+            > 4
+        {
+            let files =
+                get_files_in_dir(&(output_dir.to_owned() + &count.to_string() + "/"), "").unwrap();
+
+            count += 1;
+
+            shrink_tiles(files, &(output_dir.to_owned() + &count.to_string() + "/"));
         }
     }
 }
