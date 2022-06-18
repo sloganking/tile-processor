@@ -1,7 +1,7 @@
 use colored::Colorize;
 use image::{imageops::FilterType, DynamicImage, GenericImageView};
 use map_combine::tiler::{
-    consolidate_images, get_files_in_dir, image_to_tiles, image_to_tiles_recursive, shrink_tiles,
+    clean_dir, consolidate_images, generate_lods, get_files_in_dir, image_to_tiles, shrink_tiles,
 };
 
 fn print_err(err: &str) {
@@ -65,5 +65,7 @@ fn main() {
         //     .expect("failed to save file");
     //<
 
-    image_to_tiles_recursive("cat.png", "./tiles/");
+    clean_dir("./tiles/");
+    image_to_tiles("./cat.png", "./tiles/0/");
+    generate_lods("./tiles/");
 }

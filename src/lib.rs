@@ -134,12 +134,17 @@ pub mod tiler {
     // ) {
     // }
 
-    pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &str) {
-        // clean output directory
-        if PathBuf::from(output_dir).is_dir() {
-            fs::remove_dir_all(output_dir).unwrap();
+    // erases all content of an existing directory, or creates an empty new one.
+    pub fn clean_dir(dir: &str) {
+        // clear any existing output_dir
+        if PathBuf::from(dir).is_dir() {
+            fs::remove_dir_all(dir).unwrap();
         }
-        fs::create_dir(output_dir).unwrap();
+        fs::create_dir(dir).unwrap();
+    }
+
+    pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &str) {
+        clean_dir(output_dir);
 
         let mut filenums_map = HashMap::new();
 
@@ -239,11 +244,7 @@ pub mod tiler {
     }
 
     pub fn image_to_tiles(image_path: &str, output_dir: &str) {
-        // clear any existing output_dir
-        if PathBuf::from(output_dir).is_dir() {
-            fs::remove_dir_all(output_dir).unwrap();
-        }
-        fs::create_dir(output_dir).unwrap();
+        clean_dir(output_dir);
 
         let source_image = image::open(image_path).unwrap();
         let out_tile_width = 256;
@@ -294,9 +295,7 @@ pub mod tiler {
         }
     }
 
-    pub fn image_to_tiles_recursive(image_path: &str, output_dir: &str) {
-        image_to_tiles(image_path, &(output_dir.to_owned() + "0/"));
-
+    pub fn generate_lods(output_dir: &str) {
         let mut count = 0;
         while get_files_in_dir(&(output_dir.to_owned() + &count.to_string() + "/"), "")
             .unwrap()
