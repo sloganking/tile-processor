@@ -23,31 +23,6 @@ fn main() {
     //     .save("./0th.png")
     //     .expect("failed to save file");
 
-    //> shrink image a few times
-        // let mut dynamic = DynamicImage::ImageRgba8(output_imgbuf);
-
-        // dynamic = dynamic.resize(
-        //     dynamic.dimensions().0 / 2,
-        //     dynamic.dimensions().1 / 2,
-        //     FilterType::Lanczos3,
-        // );
-        // dynamic.save("./4th.png").expect("failed to save file");
-
-        // dynamic = dynamic.resize(
-        //     dynamic.dimensions().0 / 2,
-        //     dynamic.dimensions().1 / 2,
-        //     FilterType::Lanczos3,
-        // );
-        // dynamic.save("./8th.png").expect("failed to save file");
-
-        // dynamic = dynamic.resize(
-        //     dynamic.dimensions().0 / 2,
-        //     dynamic.dimensions().1 / 2,
-        //     FilterType::Lanczos3,
-        // );
-        // dynamic.save("./16th.png").expect("failed to save file");
-    //<
-
     //> shrink test
         // shrink_tiles(files, "./output_tiles/");
 
