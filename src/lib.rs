@@ -5,9 +5,6 @@ pub mod tiler {
     };
     use std::{collections::HashMap, fs, path::PathBuf};
 
-    const IMAGE_TILE_WIDTH: i32 = 256;
-    const IMAGE_TILE_HEIGHT: i32 = 256;
-
     #[derive(Debug)]
     struct Bounds {
         max_x: i32,
@@ -52,6 +49,14 @@ pub mod tiler {
     }
 
     pub fn consolidate_images(files: &[PathBuf]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+
+        // get initial tile dimensions
+        let mut tile_dimensions: (u32, u32) = (0,0);
+        let source_image = image::open(&files[0]).unwrap();
+        tile_dimensions.0 = source_image.width();
+        tile_dimensions.1 = source_image.height();
+        let tile_dimensions = tile_dimensions;
+
         let mut bounds = Bounds {
             max_x: i32::MIN,
             max_z: i32::MIN,
@@ -94,8 +99,8 @@ pub mod tiler {
 
         // Create a new ImgBuf with width: imgx and height: imgy
         let mut output_imgbuf = RgbaImage::new(
-            (xdiff * IMAGE_TILE_WIDTH).try_into().unwrap(),
-            (zdiff * IMAGE_TILE_HEIGHT).try_into().unwrap(),
+            (xdiff * tile_dimensions.0 as i32).try_into().unwrap(),
+            (zdiff * tile_dimensions.1 as i32).try_into().unwrap(),
         );
 
         for file_struc in &filename_and_numbers_vec {
@@ -105,14 +110,14 @@ pub mod tiler {
             let z_sector = file_struc.z + -bounds.min_z;
 
             // for every pixel
-            for x in 0..IMAGE_TILE_WIDTH {
-                for z in 0..IMAGE_TILE_HEIGHT {
+            for x in 0..tile_dimensions.0 as i32 {
+                for z in 0..tile_dimensions.1 as i32 {
                     // get pixel from tile image
                     let pixel = tile_img.get_pixel(x.try_into().unwrap(), z.try_into().unwrap());
 
                     // calculate where pixel should go on output image
-                    let output_pixel_x = x + (x_sector * IMAGE_TILE_WIDTH);
-                    let output_pixel_z = z + (z_sector * IMAGE_TILE_HEIGHT);
+                    let output_pixel_x = x + (x_sector * tile_dimensions.0 as i32);
+                    let output_pixel_z = z + (z_sector * tile_dimensions.1 as i32);
 
                     output_imgbuf.put_pixel(
                         output_pixel_x.try_into().unwrap(),
@@ -144,11 +149,23 @@ pub mod tiler {
     }
 
     pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &str) {
+
+        // cancel if nothing to do
+        if input_files.len() == 0{
+            return
+        }
+
         clean_dir(output_dir);
 
         let mut filenums_map = HashMap::new();
-
         let mut rendered_output_tiles_map = HashMap::new();
+
+        // get initial tile dimensions
+        let mut tile_dimensions: (u32, u32) = (0,0);
+        let source_image = image::open(&input_files[0]).unwrap();
+        tile_dimensions.0 = source_image.width();
+        tile_dimensions.1 = source_image.height();
+        let tile_dimensions = tile_dimensions;
 
         for file in &input_files {
             //> fill filename_and_numbers_vec
@@ -183,8 +200,8 @@ pub mod tiler {
 
             // initialize output image
             let mut output_imgbuf = RgbaImage::new(
-                (2 * IMAGE_TILE_WIDTH).try_into().unwrap(),
-                (2 * IMAGE_TILE_HEIGHT).try_into().unwrap(),
+                (2 * tile_dimensions.0).try_into().unwrap(),
+                (2 * tile_dimensions.1).try_into().unwrap(),
             );
 
             //> convert 4 images into one big image
@@ -199,15 +216,15 @@ pub mod tiler {
                                 let input_tile_img = image::open(&path).unwrap();
 
                                 // transfer image
-                                for x in 0..IMAGE_TILE_WIDTH {
-                                    for y in 0..IMAGE_TILE_HEIGHT {
+                                for x in 0..tile_dimensions.0 {
+                                    for y in 0..tile_dimensions.1 {
                                         // get pixel from tile image
                                         let pixel = input_tile_img
                                             .get_pixel(x.try_into().unwrap(), y.try_into().unwrap());
 
                                         // calculate where pixel should go on output image
-                                        let output_pixel_x = x + (x_sector * IMAGE_TILE_WIDTH);
-                                        let output_pixel_z = y + (y_sector * IMAGE_TILE_HEIGHT);
+                                        let output_pixel_x = x as i32 + (x_sector * tile_dimensions.0 as i32);
+                                        let output_pixel_z = y as i32 + (y_sector * tile_dimensions.1 as i32);
 
                                         output_imgbuf.put_pixel(
                                             output_pixel_x.try_into().unwrap(),
