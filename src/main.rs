@@ -40,7 +40,9 @@ fn main() {
         //     .expect("failed to save file");
     //<
 
+    let x_offset = 9000 / 2;
+    let y_offset = x_offset;
     clean_dir("./tiles/");
-    image_to_tiles("./cat.png", "./tiles/0/");
+    image_to_tiles("./input_images/moon.jpg", x_offset, y_offset, "./tiles/0/");
     generate_lods("./tiles/");
 }

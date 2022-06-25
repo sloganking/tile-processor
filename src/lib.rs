@@ -255,7 +255,7 @@ pub mod tiler {
     }
 
     /// converts an image into image tiles of 256 pixel wide squares
-    pub fn image_to_tiles(image_path: &str, output_dir: &str) {
+    pub fn image_to_tiles(image_path: &str, x_offset: i32, y_offset: i32, output_dir: &str) {
         clean_dir(output_dir);
 
         let source_image = image::open(image_path).unwrap();
@@ -276,19 +276,28 @@ pub mod tiler {
 
         let mut tile_image = RgbaImage::new(out_tile_width, out_tile_height);
 
+        let x_remainder = x_offset % out_tile_width as i32;
+        let y_remainder = y_offset % out_tile_height as i32;
+
+        println!("x_remainder: {}",x_remainder);
+        println!("y_remainder: {}",y_remainder);
+
+        let sector_x_offset = x_offset / out_tile_width as i32;
+        let sector_y_offset = y_offset / out_tile_height as i32;
+
         // for every sector in source image
-        for sector_y in 0..num_y_tiles {
-            for sector_x in 0..num_x_tiles {
+        for sector_y in 0..num_y_tiles as i32 {
+            for sector_x in 0..num_x_tiles as i32 {
                 // for every pixel in new tile
                 for y in 0..out_tile_height {
                     for x in 0..out_tile_width {
                         // calculate where pixel is in source image
-                        let souce_x = out_tile_width * sector_x + x;
-                        let souce_y = out_tile_width * sector_y + y;
+                        let source_x = out_tile_width as i32 * sector_x + x as i32 + x_remainder;
+                        let source_y = out_tile_width as i32 * sector_y + y as i32 + y_remainder;
 
                         let pixel =
-                            if souce_x < source_image.width() && souce_y < source_image.height() {
-                                source_image.get_pixel(souce_x, souce_y)
+                            if source_x > 0 && source_x < source_image.width() as i32 && source_y > 0 && source_y < source_image.height() as i32 {
+                                source_image.get_pixel(source_x as u32, source_y as u32)
                             } else {
                                 Rgba([0, 0, 0, 0])
                             };
@@ -299,7 +308,7 @@ pub mod tiler {
 
                 // save file
                 let output_tile_filename =
-                    sector_x.to_string() + "," + &sector_y.to_string() + ".png";
+                    (sector_x - sector_x_offset).to_string() + "," + &(sector_y - sector_y_offset).to_string() + ".png";
                 tile_image
                     .save(output_dir.to_owned() + &output_tile_filename)
                     .expect("failed to save file");
