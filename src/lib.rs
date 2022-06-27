@@ -262,26 +262,31 @@ pub mod tiler {
         let out_tile_width = 256;
         let out_tile_height = 256;
 
+        let x_remainder = x_offset % out_tile_width as i32;
+        let y_remainder = y_offset % out_tile_height as i32;
+
+        let mut extra_x_tile: i32 = 0;
         let num_x_tiles = if source_image.width() % out_tile_width == 0 {
             source_image.width() / out_tile_width
         } else {
+            extra_x_tile = 1;
             (source_image.width() / out_tile_width) + 1
         };
 
+        let mut extra_y_tile: i32 = 0;
         let num_y_tiles = if source_image.height() % out_tile_height == 0 {
             source_image.height() / out_tile_height
         } else {
+            extra_y_tile = 1;
             (source_image.height() / out_tile_height) + 1
         };
 
         let mut tile_image = RgbaImage::new(out_tile_width, out_tile_height);
 
-        let x_remainder = x_offset % out_tile_width as i32;
-        let y_remainder = y_offset % out_tile_height as i32;
-
         println!("x_remainder: {}",x_remainder);
         println!("y_remainder: {}",y_remainder);
 
+        println!("num_x_tiles: {}",num_x_tiles);
         let sector_x_offset = x_offset / out_tile_width as i32;
         let sector_y_offset = y_offset / out_tile_height as i32;
 
@@ -292,13 +297,19 @@ pub mod tiler {
                 for y in 0..out_tile_height {
                     for x in 0..out_tile_width {
                         // calculate where pixel is in source image
-                        let source_x = out_tile_width as i32 * sector_x + x as i32 + x_remainder;
-                        let source_y = out_tile_width as i32 * sector_y + y as i32 + y_remainder;
+                        let source_x = out_tile_width as i32 * sector_x + x as i32 + x_remainder - extra_x_tile * out_tile_width as i32;
+                        let source_y = out_tile_width as i32 * sector_y + y as i32 + y_remainder - extra_y_tile * out_tile_height as i32;
 
                         let pixel =
                             if source_x > 0 && source_x < source_image.width() as i32 && source_y > 0 && source_y < source_image.height() as i32 {
+                                // if sector_x == 35{
+                                //     println!("35 pixel")   ;
+                                // }
                                 source_image.get_pixel(source_x as u32, source_y as u32)
                             } else {
+                                // if sector_x == 35{
+                                //     println!("35 empty")   ;
+                                // }
                                 Rgba([0, 0, 0, 0])
                             };
 
@@ -308,7 +319,7 @@ pub mod tiler {
 
                 // save file
                 let output_tile_filename =
-                    (sector_x - sector_x_offset).to_string() + "," + &(sector_y - sector_y_offset).to_string() + ".png";
+                    (sector_x - sector_x_offset - extra_x_tile).to_string() + "," + &(sector_y - sector_y_offset - extra_y_tile).to_string() + ".png";
                 tile_image
                     .save(output_dir.to_owned() + &output_tile_filename)
                     .expect("failed to save file");
