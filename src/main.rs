@@ -1,7 +1,8 @@
 use colored::Colorize;
 use image::{imageops::FilterType, DynamicImage, GenericImageView};
 use map_combine::tiler::{
-    clean_dir, consolidate_images, generate_lods, get_files_in_dir, image_to_tiles, shrink_tiles,
+    clean_dir, consolidate_images, generate_lods, get_files_in_dir, image_to_tiles, sector_at_pos,
+    shrink_tiles,
 };
 
 fn print_err(err: &str) {
@@ -40,7 +41,8 @@ fn main() {
         //     .expect("failed to save file");
     //<
 
+    // turn image into tiles and LODs
     clean_dir("./tiles/");
-    image_to_tiles("./cat.png", "./tiles/0/");
+    image_to_tiles("./input_images/cat.png", 0, 0, "./tiles/0/");
     generate_lods("./tiles/");
 }

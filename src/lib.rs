@@ -255,7 +255,7 @@ pub mod tiler {
     }
 
     /// converts an image into image tiles of 256 pixel wide squares
-    pub fn image_to_tiles(image_path: &str, output_dir: &str) {
+    pub fn image_to_tiles(image_path: &str, x_offset: i32, y_offset: i32, output_dir: &str) {
         clean_dir(output_dir);
 
         let source_image = image::open(image_path).unwrap();
@@ -276,24 +276,37 @@ pub mod tiler {
 
         let mut tile_image = RgbaImage::new(out_tile_width, out_tile_height);
 
+        let (top_left_sector, bottom_right_sector) = get_limit_sectors(
+            x_offset,
+            y_offset,
+            (out_tile_width as f32, out_tile_height as f32),
+            (source_image.width() as f32, source_image.height() as f32),
+        );
+        // println!("top_left_sector: {:?}",top_left_sector);
+        // println!("bottom_right_sector: {:?}",bottom_right_sector);
+
         // for every sector in source image
-        for sector_y in 0..num_y_tiles {
-            for sector_x in 0..num_x_tiles {
+        for sector_y in top_left_sector.1..=bottom_right_sector.1 {
+            for sector_x in top_left_sector.0..=bottom_right_sector.0 {
                 // for every pixel in new tile
-                for y in 0..out_tile_height {
-                    for x in 0..out_tile_width {
+                for y in 0..out_tile_height as i32 {
+                    for x in 0..out_tile_width as i32 {
                         // calculate where pixel is in source image
-                        let souce_x = out_tile_width * sector_x + x;
-                        let souce_y = out_tile_width * sector_y + y;
+                        let souce_x = (out_tile_width as i32 * sector_x + x) + x_offset;
+                        let souce_y = (out_tile_width as i32 * sector_y + y) + y_offset;
 
-                        let pixel =
-                            if souce_x < source_image.width() && souce_y < source_image.height() {
-                                source_image.get_pixel(souce_x, souce_y)
-                            } else {
-                                Rgba([0, 0, 0, 0])
-                            };
+                        let pixel = if souce_x > 0
+                            && souce_x < source_image.width().try_into().unwrap()
+                            && souce_y > 0
+                            && souce_y < source_image.height().try_into().unwrap()
+                        {
+                            source_image
+                                .get_pixel(souce_x.try_into().unwrap(), souce_y.try_into().unwrap())
+                        } else {
+                            Rgba([0, 0, 0, 0])
+                        };
 
-                        tile_image.put_pixel(x, y, pixel)
+                        tile_image.put_pixel(x.try_into().unwrap(), y.try_into().unwrap(), pixel)
                     }
                 }
 
@@ -328,5 +341,49 @@ pub mod tiler {
 
             shrink_tiles(files, &(output_dir.to_owned() + &count.to_string() + "/"));
         }
+    }
+
+    pub fn sector_at_pos(x: f32, y: f32, tile_dimensions: (f32, f32)) -> (i32, i32) {
+        let two: f32 = 2.0;
+        let lod = 0;
+        // let screen_point_coords = screen_pos_to_coord(x, y, camera);
+
+        let screen_point_coords = (x, y);
+
+        // get sector x
+        let tile_world_x_size = tile_dimensions.0 as f32 * two.powf(lod as f32);
+        let screen_point_sector_x = if screen_point_coords.0 < 0.0 {
+            (screen_point_coords.0 / tile_world_x_size) as i32 - 1
+        } else {
+            (screen_point_coords.0 / tile_world_x_size) as i32
+        };
+
+        // get sector y
+        let tile_world_y_size = tile_dimensions.1 as f32 * two.powf(lod as f32);
+        let screen_point_sector_y = if screen_point_coords.1 < 0.0 {
+            (screen_point_coords.1 / tile_world_y_size) as i32 - 1
+        } else {
+            (screen_point_coords.1 / tile_world_y_size) as i32
+        };
+
+        (screen_point_sector_x, screen_point_sector_y)
+    }
+
+    pub fn get_limit_sectors(
+        x_offset: i32,
+        y_offset: i32,
+        tile_dimensions: (f32, f32),
+        image_dimensions: (f32, f32),
+    ) -> ((i32, i32), (i32, i32)) {
+        let top_left_sector =
+            sector_at_pos(0. - x_offset as f32, 0. - y_offset as f32, tile_dimensions);
+
+        let bottom_right_sector = sector_at_pos(
+            image_dimensions.0 - x_offset as f32,
+            image_dimensions.1 - y_offset as f32,
+            tile_dimensions,
+        );
+
+        (top_left_sector, bottom_right_sector)
     }
 }
