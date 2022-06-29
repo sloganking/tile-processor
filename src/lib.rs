@@ -295,9 +295,9 @@ pub mod tiler {
                         let souce_x = (out_tile_width as i32 * sector_x + x) + x_offset;
                         let souce_y = (out_tile_width as i32 * sector_y + y) + y_offset;
 
-                        let pixel = if souce_x > 0
+                        let pixel = if souce_x >= 0
                             && souce_x < source_image.width().try_into().unwrap()
-                            && souce_y > 0
+                            && souce_y >= 0
                             && souce_y < source_image.height().try_into().unwrap()
                         {
                             source_image
