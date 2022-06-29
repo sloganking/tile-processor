@@ -143,7 +143,7 @@ pub mod tiler {
     /// Compresses one lod layer
     pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &str) {
         // cancel if nothing to do
-        if input_files.len() == 0 {
+        if input_files.is_empty() {
             return;
         }
 
@@ -180,7 +180,7 @@ pub mod tiler {
             //<
         }
 
-        for ((x, y), _) in &filenums_map {
+        for (x, y) in filenums_map.keys() {
             // determine coords of output tile
             let output_tile_x = if *x < 0 { (*x - 1) / 2 } else { *x / 2 };
             let output_tile_y = if *y < 0 { (*y - 1) / 2 } else { *y / 2 };
@@ -191,10 +191,7 @@ pub mod tiler {
             }
 
             // initialize output image
-            let mut output_imgbuf = RgbaImage::new(
-                (2 * tile_dimensions.0).try_into().unwrap(),
-                (2 * tile_dimensions.1).try_into().unwrap(),
-            );
+            let mut output_imgbuf = RgbaImage::new(2 * tile_dimensions.0, 2 * tile_dimensions.1);
 
             //> convert 4 images into one big image
                 // for the 4 sectors of the new tile
@@ -211,8 +208,7 @@ pub mod tiler {
                                 for x in 0..tile_dimensions.0 {
                                     for y in 0..tile_dimensions.1 {
                                         // get pixel from tile image
-                                        let pixel = input_tile_img
-                                            .get_pixel(x.try_into().unwrap(), y.try_into().unwrap());
+                                        let pixel = input_tile_img.get_pixel(x, y);
 
                                         // calculate where pixel should go on output image
                                         let output_pixel_x =
@@ -261,18 +257,6 @@ pub mod tiler {
         let source_image = image::open(image_path).unwrap();
         let out_tile_width = 256;
         let out_tile_height = 256;
-
-        let num_x_tiles = if source_image.width() % out_tile_width == 0 {
-            source_image.width() / out_tile_width
-        } else {
-            (source_image.width() / out_tile_width) + 1
-        };
-
-        let num_y_tiles = if source_image.height() % out_tile_height == 0 {
-            source_image.height() / out_tile_height
-        } else {
-            (source_image.height() / out_tile_height) + 1
-        };
 
         let mut tile_image = RgbaImage::new(out_tile_width, out_tile_height);
 

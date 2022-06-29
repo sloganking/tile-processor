@@ -1,11 +1,7 @@
 use colored::Colorize;
-use image::{imageops::FilterType, DynamicImage, GenericImageView};
-use map_combine::tiler::{
-    clean_dir, consolidate_images, generate_lods, get_files_in_dir, image_to_tiles, sector_at_pos,
-    shrink_tiles,
-};
+use map_combine::tiler::*;
 
-fn print_err(err: &str) {
+fn _print_err(err: &str) {
     println!("{}: {}", "error".red().bold(), err);
 }
 
