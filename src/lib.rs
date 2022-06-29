@@ -272,6 +272,8 @@ pub mod tiler {
         // for every sector in source image
         for sector_y in top_left_sector.1..=bottom_right_sector.1 {
             for sector_x in top_left_sector.0..=bottom_right_sector.0 {
+                let mut tile_empty = true;
+
                 // for every pixel in new tile
                 for y in 0..out_tile_height as i32 {
                     for x in 0..out_tile_width as i32 {
@@ -284,8 +286,16 @@ pub mod tiler {
                             && souce_y >= 0
                             && souce_y < source_image.height().try_into().unwrap()
                         {
-                            source_image
-                                .get_pixel(souce_x.try_into().unwrap(), souce_y.try_into().unwrap())
+                            let pixel = source_image.get_pixel(
+                                souce_x.try_into().unwrap(),
+                                souce_y.try_into().unwrap(),
+                            );
+
+                            if pixel != Rgba([0, 0, 0, 0]) {
+                                tile_empty = false;
+                            }
+
+                            pixel
                         } else {
                             Rgba([0, 0, 0, 0])
                         };
@@ -295,11 +305,13 @@ pub mod tiler {
                 }
 
                 // save file
-                let output_tile_filename =
-                    sector_x.to_string() + "," + &sector_y.to_string() + ".png";
-                tile_image
-                    .save(output_dir.to_owned() + &output_tile_filename)
-                    .expect("failed to save file");
+                if !tile_empty {
+                    let output_tile_filename =
+                        sector_x.to_string() + "," + &sector_y.to_string() + ".png";
+                    tile_image
+                        .save(output_dir.to_owned() + &output_tile_filename)
+                        .expect("failed to save file");
+                }
             }
         }
     }
