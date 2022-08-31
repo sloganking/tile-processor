@@ -196,12 +196,10 @@ pub mod tiler {
                 // mark output image tile as rendered
                 rendered_output_tiles_map.insert((output_tile_x, output_tile_y), true);
 
-                let output_tile_x_2 = output_tile_x.clone();
-                let output_tile_y_2 = output_tile_y.clone();
-
-                let test_closure = |output_tile_x_2: i32, output_tile_y_2: i32| {
-                    let output_tile_x_2 = output_tile_x_2;
-                    let output_tile_y_2 = output_tile_y_2;
+                //
+                let test_closure = |output_tile_x: i32, output_tile_y: i32| {
+                    let output_tile_x = output_tile_x;
+                    let output_tile_y = output_tile_y;
 
                     // initialize output image
                     let mut output_imgbuf =
@@ -211,8 +209,8 @@ pub mod tiler {
                         // for the 4 sectors of the new tile
                         for x_sector in 0..=1 {
                             for y_sector in 0..=1 {
-                                let real_x = output_tile_x_2 * 2 + x_sector;
-                                let real_y = output_tile_y_2 * 2 + y_sector;
+                                let real_x = output_tile_x * 2 + x_sector;
+                                let real_y = output_tile_y * 2 + y_sector;
 
                                 match &filenums_map.get(&(real_x, real_y)) {
                                     Some(path) => {
@@ -253,14 +251,14 @@ pub mod tiler {
 
                     //<> save file
                         let output_tile_filename =
-                            output_tile_x_2.to_string() + "," + &output_tile_y_2.to_string() + ".png";
+                            output_tile_x.to_string() + "," + &output_tile_y.to_string() + ".png";
                         dynamic
                             .save(output_dir.to_owned() + &output_tile_filename)
                             .expect("failed to save file");
                     //<
                 };
 
-                s.spawn(move || test_closure(output_tile_x_2, output_tile_y_2));
+                s.spawn(move || test_closure(output_tile_x, output_tile_y));
             }
         })
     }
