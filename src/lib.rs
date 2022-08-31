@@ -180,74 +180,89 @@ pub mod tiler {
             //<
         }
 
-        for (x, y) in filenums_map.keys() {
-            // determine coords of output tile
-            let output_tile_x = if *x < 0 { (*x - 1) / 2 } else { *x / 2 };
-            let output_tile_y = if *y < 0 { (*y - 1) / 2 } else { *y / 2 };
+        let filenums_map = filenums_map;
 
-            //skip any already rendered tiles
-            if rendered_output_tiles_map.contains_key(&(output_tile_x, output_tile_y)) {
-                continue;
-            }
+        std::thread::scope(|s| {
+            for (x, y) in filenums_map.keys() {
+                // determine coords of output tile
+                let output_tile_x = if *x < 0 { (*x - 1) / 2 } else { *x / 2 };
+                let output_tile_y = if *y < 0 { (*y - 1) / 2 } else { *y / 2 };
 
-            // initialize output image
-            let mut output_imgbuf = RgbaImage::new(2 * tile_dimensions.0, 2 * tile_dimensions.1);
-
-            //> convert 4 images into one big image
-                // for the 4 sectors of the new tile
-                for x_sector in 0..=1 {
-                    for y_sector in 0..=1 {
-                        let real_x = output_tile_x * 2 + x_sector;
-                        let real_y = output_tile_y * 2 + y_sector;
-
-                        match filenums_map.get(&(real_x, real_y)) {
-                            Some(path) => {
-                                let input_tile_img = image::open(&path).unwrap();
-
-                                // transfer image
-                                for x in 0..tile_dimensions.0 {
-                                    for y in 0..tile_dimensions.1 {
-                                        // get pixel from tile image
-                                        let pixel = input_tile_img.get_pixel(x, y);
-
-                                        // calculate where pixel should go on output image
-                                        let output_pixel_x =
-                                            x as i32 + (x_sector * tile_dimensions.0 as i32);
-                                        let output_pixel_z =
-                                            y as i32 + (y_sector * tile_dimensions.1 as i32);
-
-                                        output_imgbuf.put_pixel(
-                                            output_pixel_x.try_into().unwrap(),
-                                            output_pixel_z.try_into().unwrap(),
-                                            pixel,
-                                        )
-                                    }
-                                }
-                            }
-                            None => continue,
-                        }
-                    }
+                //skip any already rendered tiles
+                if rendered_output_tiles_map.contains_key(&(output_tile_x, output_tile_y)) {
+                    continue;
                 }
 
-            //<> resize output image
-                let mut dynamic = DynamicImage::ImageRgba8(output_imgbuf);
-                dynamic = dynamic.resize(
-                    dynamic.dimensions().0 / 2,
-                    dynamic.dimensions().1 / 2,
-                    FilterType::Lanczos3,
-                );
+                // mark output image tile as rendered
+                rendered_output_tiles_map.insert((output_tile_x, output_tile_y), true);
 
-            //<> save file
-                let output_tile_filename =
-                    output_tile_x.to_string() + "," + &output_tile_y.to_string() + ".png";
-                dynamic
-                    .save(output_dir.to_owned() + &output_tile_filename)
-                    .expect("failed to save file");
-            //<
+                let output_tile_x_2 = output_tile_x.clone();
+                let output_tile_y_2 = output_tile_y.clone();
 
-            // mark output image tile as rendered
-            rendered_output_tiles_map.insert((output_tile_x, output_tile_y), true);
-        }
+                let test_closure = |output_tile_x_2: i32, output_tile_y_2: i32| {
+                    let output_tile_x_2 = output_tile_x_2;
+                    let output_tile_y_2 = output_tile_y_2;
+
+                    // initialize output image
+                    let mut output_imgbuf =
+                        RgbaImage::new(2 * tile_dimensions.0, 2 * tile_dimensions.1);
+
+                    //> convert 4 images into one big image
+                        // for the 4 sectors of the new tile
+                        for x_sector in 0..=1 {
+                            for y_sector in 0..=1 {
+                                let real_x = output_tile_x_2 * 2 + x_sector;
+                                let real_y = output_tile_y_2 * 2 + y_sector;
+
+                                match &filenums_map.get(&(real_x, real_y)) {
+                                    Some(path) => {
+                                        let input_tile_img = image::open(&path).unwrap();
+
+                                        // transfer image
+                                        for x in 0..tile_dimensions.0 {
+                                            for y in 0..tile_dimensions.1 {
+                                                // get pixel from tile image
+                                                let pixel = input_tile_img.get_pixel(x, y);
+
+                                                // calculate where pixel should go on output image
+                                                let output_pixel_x =
+                                                    x as i32 + (x_sector * tile_dimensions.0 as i32);
+                                                let output_pixel_z =
+                                                    y as i32 + (y_sector * tile_dimensions.1 as i32);
+
+                                                output_imgbuf.put_pixel(
+                                                    output_pixel_x.try_into().unwrap(),
+                                                    output_pixel_z.try_into().unwrap(),
+                                                    pixel,
+                                                )
+                                            }
+                                        }
+                                    }
+                                    None => continue,
+                                }
+                            }
+                        }
+
+                    //<> resize output image
+                        let mut dynamic = DynamicImage::ImageRgba8(output_imgbuf);
+                        dynamic = dynamic.resize(
+                            dynamic.dimensions().0 / 2,
+                            dynamic.dimensions().1 / 2,
+                            FilterType::Lanczos3,
+                        );
+
+                    //<> save file
+                        let output_tile_filename =
+                            output_tile_x_2.to_string() + "," + &output_tile_y_2.to_string() + ".png";
+                        dynamic
+                            .save(output_dir.to_owned() + &output_tile_filename)
+                            .expect("failed to save file");
+                    //<
+                };
+
+                s.spawn(move || test_closure(output_tile_x_2, output_tile_y_2));
+            }
+        })
     }
 
     /// converts an image into image tiles of 256 pixel wide squares

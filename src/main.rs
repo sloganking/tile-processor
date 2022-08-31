@@ -39,6 +39,6 @@ fn main() {
 
     // turn image into tiles and LODs
     clean_dir("./tiles/");
-    image_to_tiles("./input_images/cat.png", 0, 0, "./tiles/0/");
+    image_to_tiles("./input_images/cosmic_cliffs.png", 0, 0, "./tiles/0/");
     generate_lods("./tiles/");
 }
