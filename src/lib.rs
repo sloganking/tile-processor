@@ -271,8 +271,6 @@ pub mod tiler {
         let out_tile_width = 256;
         let out_tile_height = 256;
 
-        let mut tile_image = RgbaImage::new(out_tile_width, out_tile_height);
-
         let (top_left_sector, bottom_right_sector) = get_limit_sectors(
             x_offset,
             y_offset,
@@ -282,51 +280,67 @@ pub mod tiler {
         // println!("top_left_sector: {:?}",top_left_sector);
         // println!("bottom_right_sector: {:?}",bottom_right_sector);
 
-        // for every sector in source image
-        for sector_y in top_left_sector.1..=bottom_right_sector.1 {
-            for sector_x in top_left_sector.0..=bottom_right_sector.0 {
-                let mut tile_empty = true;
+        std::thread::scope(|s| {
+            // for every sector in source image
+            for sector_y in top_left_sector.1..=bottom_right_sector.1 {
+                for sector_x in top_left_sector.0..=bottom_right_sector.0 {
+                    let mut tile_image = RgbaImage::new(out_tile_width, out_tile_height);
+                    let mut tile_empty = true;
 
-                // for every pixel in new tile
-                for y in 0..out_tile_height as i32 {
-                    for x in 0..out_tile_width as i32 {
-                        // calculate where pixel is in source image
-                        let souce_x = (out_tile_width as i32 * sector_x + x) + x_offset;
-                        let souce_y = (out_tile_width as i32 * sector_y + y) + y_offset;
+                    // for every pixel in new tile
+                    for y in 0..out_tile_height as i32 {
+                        for x in 0..out_tile_width as i32 {
+                            // calculate where pixel is in source image
+                            let souce_x = (out_tile_width as i32 * sector_x + x) + x_offset;
+                            let souce_y = (out_tile_width as i32 * sector_y + y) + y_offset;
 
-                        let pixel = if souce_x >= 0
-                            && souce_x < source_image.width().try_into().unwrap()
-                            && souce_y >= 0
-                            && souce_y < source_image.height().try_into().unwrap()
-                        {
-                            let pixel = source_image.get_pixel(
-                                souce_x.try_into().unwrap(),
-                                souce_y.try_into().unwrap(),
-                            );
+                            let pixel = if souce_x >= 0
+                                && souce_x < source_image.width().try_into().unwrap()
+                                && souce_y >= 0
+                                && souce_y < source_image.height().try_into().unwrap()
+                            {
+                                let pixel = source_image.get_pixel(
+                                    souce_x.try_into().unwrap(),
+                                    souce_y.try_into().unwrap(),
+                                );
 
-                            if pixel != Rgba([0, 0, 0, 0]) {
-                                tile_empty = false;
-                            }
+                                if pixel != Rgba([0, 0, 0, 0]) {
+                                    tile_empty = false;
+                                }
 
-                            pixel
-                        } else {
-                            Rgba([0, 0, 0, 0])
+                                pixel
+                            } else {
+                                Rgba([0, 0, 0, 0])
+                            };
+
+                            tile_image.put_pixel(
+                                x.try_into().unwrap(),
+                                y.try_into().unwrap(),
+                                pixel,
+                            )
+                        }
+                    }
+
+                    // let tile_image = tile_image;
+
+                    let file_save_closure =
+                        |sector_x: i32,
+                         sector_y: i32,
+                         tile_image: ImageBuffer<Rgba<u8>, Vec<u8>>| {
+                            let output_tile_filename =
+                                sector_x.to_string() + "," + &sector_y.to_string() + ".png";
+                            tile_image
+                                .save(output_dir.to_owned() + &output_tile_filename)
+                                .expect("failed to save file");
                         };
 
-                        tile_image.put_pixel(x.try_into().unwrap(), y.try_into().unwrap(), pixel)
+                    // save file
+                    if !tile_empty {
+                        s.spawn(move || file_save_closure(sector_x, sector_y, tile_image));
                     }
                 }
-
-                // save file
-                if !tile_empty {
-                    let output_tile_filename =
-                        sector_x.to_string() + "," + &sector_y.to_string() + ".png";
-                    tile_image
-                        .save(output_dir.to_owned() + &output_tile_filename)
-                        .expect("failed to save file");
-                }
             }
-        }
+        });
     }
 
     /// Generates LOD layers
