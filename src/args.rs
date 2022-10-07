@@ -38,9 +38,11 @@ pub struct GenTilesArgs {
     #[clap(long, default_value_t = 256, help_heading = "IO")]
     pub tile_dimensions: u32,
 
-    /// The width and height (in pixels) of output tiles.
+    /// The x pixel to make tile pixel 0,0.
     #[clap(long, help_heading = "IO")]
     pub x_offset: Option<i32>,
 
-
+    /// The y pixel to make tile pixel 0,0.
+    #[clap(long, help_heading = "IO")]
+    pub y_offset: Option<i32>,
 }

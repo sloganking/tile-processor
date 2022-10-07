@@ -43,13 +43,19 @@ fn main() {
                 .into_os_string()
                 .into_string()
                 .unwrap();
+
             println!("cleaning dir...");
             clean_dir(&output_dir);
+
             println!("slicing tiles...");
             image_to_tiles(
                 image_path,
-                (dimensions.0 / 2).try_into().unwrap(),
-                (dimensions.1 / 2).try_into().unwrap(),
+                gen_tiles_args
+                    .x_offset
+                    .unwrap_or_else(|| (dimensions.0 / 2).try_into().unwrap()),
+                gen_tiles_args
+                    .y_offset
+                    .unwrap_or_else(|| (dimensions.1 / 2).try_into().unwrap()),
                 &output_dir,
                 gen_tiles_args.tile_dimensions,
             );
