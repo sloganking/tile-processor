@@ -1,6 +1,7 @@
 use colored::Colorize;
-mod args;
+use image::{io::Reader, GenericImageView};
 
+mod args;
 use args::{GenTilesArgs, TopSubcommands};
 use map_combine::tiler::*;
 
@@ -27,6 +28,10 @@ fn main() {
     //     .expect("failed to save file");
     //<
 
+    // turn image into tiles and LODs
+    let image_path = &gen_tiles_args.input.into_os_string().into_string().unwrap();
+    let dimensions = Reader::open(image_path).unwrap().into_dimensions().unwrap();
+    
     println!("args: {:?}", args);
 
     match args.top_commands {
@@ -41,10 +46,8 @@ fn main() {
             println!("slicing tiles...");
             image_to_tiles(
                 &gen_tiles_args.input.into_os_string().into_string().unwrap(),
-                // (source_image.width() / 2).try_into().unwrap(),
-                // (source_image.height() / 2).try_into().unwrap(),
-                0,
-                0,
+                (dimensions.0/2).try_into().unwrap(),
+                (dimensions.1/2).try_into().unwrap(),
                 &output_dir,
                 gen_tiles_args.tile_dimensions,
             );
