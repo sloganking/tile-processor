@@ -1,5 +1,7 @@
 use colored::Colorize;
-use image::GenericImageView;
+mod args;
+
+use args::{GenTilesArgs, TopSubcommands};
 use map_combine::tiler::*;
 
 fn _print_err(err: &str) {
@@ -7,31 +9,60 @@ fn _print_err(err: &str) {
 }
 
 fn main() {
+    let args: args::Args = clap::Parser::parse();
+
     //> turn tiles into one image
-        // let files = get_files_in_dir("./input", "").unwrap();
+    // let files = get_files_in_dir("./input", "").unwrap();
 
-        // if files.is_empty() {
-        //     print_err("no files found");
-        //     return;
-        // }
+    // if files.is_empty() {
+    //     print_err("no files found");
+    //     return;
+    // }
 
-        // let output_imgbuf = consolidate_images(&files);
+    // let output_imgbuf = consolidate_images(&files);
 
-        // Write the contents of this image to the Writer in PNG format.
-        // output_imgbuf
-        //     .save("./0th.png")
-        //     .expect("failed to save file");
+    // Write the contents of this image to the Writer in PNG format.
+    // output_imgbuf
+    //     .save("./0th.png")
+    //     .expect("failed to save file");
     //<
 
-    // turn image into tiles and LODs
-    let image_path = "./input_images/cosmic_cliffs.png";
-    let source_image = image::open(image_path).unwrap();
-    clean_dir("./tiles/");
-    image_to_tiles(
-        image_path,
-        (source_image.width() / 2).try_into().unwrap(),
-        (source_image.height() / 2).try_into().unwrap(),
-        "./tiles/0/",
-    );
-    generate_lods("./tiles/");
+    println!("args: {:?}", args);
+
+    match args.top_commands {
+        TopSubcommands::GenTiles(gen_tiles_args) => {
+            let output_dir = gen_tiles_args
+                .output
+                .into_os_string()
+                .into_string()
+                .unwrap();
+            println!("cleaning dir...");
+            clean_dir(&output_dir);
+            println!("slicing tiles...");
+            image_to_tiles(
+                &gen_tiles_args.input.into_os_string().into_string().unwrap(),
+                // (source_image.width() / 2).try_into().unwrap(),
+                // (source_image.height() / 2).try_into().unwrap(),
+                0,
+                0,
+                &output_dir,
+                gen_tiles_args.tile_dimensions,
+            );
+        }
+        TopSubcommands::GenTileLayers | TopSubcommands::StitchImage => {
+            todo!()
+        }
+    }
+
+    // // turn image into tiles and LODs
+    // let image_path = "./input_images/cosmic_cliffs.png";
+    // let source_image = image::open(image_path).unwrap();
+    // clean_dir("./tiles/");
+    // image_to_tiles(
+    //     image_path,
+    //     (source_image.width() / 2).try_into().unwrap(),
+    //     (source_image.height() / 2).try_into().unwrap(),
+    //     "./tiles/0/",
+    // );
+    // generate_lods("./tiles/");
 }
