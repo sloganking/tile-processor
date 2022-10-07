@@ -1,5 +1,5 @@
 use colored::Colorize;
-use image::GenericImageView;
+use image::{io::Reader, GenericImageView};
 use map_combine::tiler::*;
 
 fn _print_err(err: &str) {
@@ -24,13 +24,15 @@ fn main() {
     //<
 
     // turn image into tiles and LODs
-    let image_path = "./input_images/cosmic_cliffs.png";
-    let source_image = image::open(image_path).unwrap();
+    let image_path = "./input_images/androm.png";
+    let dimensions = Reader::open(image_path).unwrap().into_dimensions().unwrap();
+
+    println!("dimensions: {:?}", dimensions);
     clean_dir("./tiles/");
     image_to_tiles(
         image_path,
-        (source_image.width() / 2).try_into().unwrap(),
-        (source_image.height() / 2).try_into().unwrap(),
+        (dimensions.0/2).try_into().unwrap(),
+        (dimensions.1/2).try_into().unwrap(),
         "./tiles/0/",
     );
     generate_lods("./tiles/");
