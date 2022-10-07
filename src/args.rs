@@ -21,7 +21,7 @@ pub enum TopSubcommands {
     /// Slices an image into image tiles and generates tile LOD layers.
     GenTileLayers,
     /// Creates single image from directory of tiles.
-    StitchImage,
+    StitchImage(StitchImageArgs),
 }
 
 #[derive(Debug, clap::Parser)]
@@ -45,4 +45,17 @@ pub struct GenTilesArgs {
     /// The y pixel to make tile pixel 0,0.
     #[clap(long, help_heading = "IO")]
     pub y_offset: Option<i32>,
+}
+
+#[derive(Debug, clap::Parser)]
+pub struct StitchImageArgs {
+
+    /// The directory of tiles to turn into an image.
+    #[clap(long, short = 'i')]
+    pub input: PathBuf,
+
+    /// The location to save the outputed image to.
+    #[clap(long, short = 'o')]
+    pub output: PathBuf,
+
 }

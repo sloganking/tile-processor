@@ -1,12 +1,13 @@
 use colored::Colorize;
-use image::{io::Reader, GenericImageView};
+use image::io::Reader;
 
 mod args;
-use args::{GenTilesArgs, TopSubcommands};
+use args::TopSubcommands;
 use map_combine::tiler::*;
 
-fn _print_err(err: &str) {
+fn print_err(err: &str) {
     println!("{}: {}", "error".red().bold(), err);
+    std::process::exit(1);
 }
 
 fn main() {
@@ -61,8 +62,35 @@ fn main() {
             );
         }
         TopSubcommands::GenTileLayers => todo!(),
-        TopSubcommands::StitchImage => {
-            todo!()
+        TopSubcommands::StitchImage(stitch_image_args) => {
+            // Assertions
+            if !stitch_image_args.input.is_dir() {
+                print_err("input is not a directory.");
+            }
+            // if !stitch_image_args.output.is_file(){
+            //     print_err("output is not a file.");
+            // }
+
+            let files = get_files_in_dir(
+                &stitch_image_args
+                    .input
+                    .into_os_string()
+                    .into_string()
+                    .unwrap(),
+                "",
+            )
+            .unwrap();
+
+            if files.is_empty() {
+                print_err("no files found in input directory.");
+            }
+
+            let output_imgbuf = consolidate_images(&files);
+
+            // Write the contents of this image to the Writer in PNG format.
+            output_imgbuf
+                .save(stitch_image_args.output)
+                .expect("failed to save file");
         }
     }
 
