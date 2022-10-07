@@ -29,13 +29,15 @@ fn main() {
     //<
 
     // turn image into tiles and LODs
-    let image_path = &gen_tiles_args.input.into_os_string().into_string().unwrap();
-    let dimensions = Reader::open(image_path).unwrap().into_dimensions().unwrap();
-    
+
     println!("args: {:?}", args);
 
     match args.top_commands {
         TopSubcommands::GenTiles(gen_tiles_args) => {
+            // get input image dimensions
+            let image_path = &gen_tiles_args.input.into_os_string().into_string().unwrap();
+            let dimensions = Reader::open(image_path).unwrap().into_dimensions().unwrap();
+
             let output_dir = gen_tiles_args
                 .output
                 .into_os_string()
@@ -45,14 +47,15 @@ fn main() {
             clean_dir(&output_dir);
             println!("slicing tiles...");
             image_to_tiles(
-                &gen_tiles_args.input.into_os_string().into_string().unwrap(),
-                (dimensions.0/2).try_into().unwrap(),
-                (dimensions.1/2).try_into().unwrap(),
+                image_path,
+                (dimensions.0 / 2).try_into().unwrap(),
+                (dimensions.1 / 2).try_into().unwrap(),
                 &output_dir,
                 gen_tiles_args.tile_dimensions,
             );
         }
-        TopSubcommands::GenTileLayers | TopSubcommands::StitchImage => {
+        TopSubcommands::GenTileLayers => todo!(),
+        TopSubcommands::StitchImage => {
             todo!()
         }
     }
