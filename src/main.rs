@@ -30,7 +30,6 @@ fn main() {
             println!("cleaning dir...");
             clean_dir(&output_dir);
 
-            println!("slicing tiles...");
             image_to_tiles(
                 image_path,
                 gen_tiles_args

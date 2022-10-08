@@ -273,9 +273,12 @@ pub mod tiler {
     ) {
         clean_dir(output_dir);
 
+        println!("decoding image...");
         let source_image = image::open(image_path).unwrap();
         let out_tile_width = tile_dimensions;
         let out_tile_height = tile_dimensions;
+
+        println!("slicing tiles...");
 
         let (top_left_sector, bottom_right_sector) = get_limit_sectors(
             x_offset,
