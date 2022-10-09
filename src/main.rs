@@ -5,7 +5,7 @@ mod args;
 use args::{GenTilesArgs, TopSubcommands};
 use map_combine::tiler::*;
 
-fn print_err(err: &str) {
+fn print_err(err: &str) -> ! {
     println!("{}: {}", "error".red().bold(), err);
     std::process::exit(1);
 }
@@ -57,9 +57,9 @@ fn main() {
             if !stitch_image_args.input.is_dir() {
                 print_err("input is not a directory.");
             }
-            // if !stitch_image_args.output.is_file(){
-            //     print_err("output is not a file.");
-            // }
+            stitch_image_args.output.extension().unwrap_or_else(|| {
+                print_err("output has no file extension.");
+            });
 
             let files = get_files_in_dir(
                 &stitch_image_args
