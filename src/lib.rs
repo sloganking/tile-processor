@@ -3,7 +3,11 @@ pub mod tiler {
     use image::{
         imageops::FilterType, DynamicImage, GenericImageView, ImageBuffer, Rgba, RgbaImage,
     };
-    use std::{collections::HashMap, fs, path::PathBuf};
+    use std::{
+        collections::HashMap,
+        fs,
+        path::{Path, PathBuf},
+    };
 
     #[derive(Debug)]
     struct Bounds {
@@ -132,16 +136,16 @@ pub mod tiler {
     }
 
     /// Erases all content of an existing directory, or creates an empty new one.
-    pub fn clean_dir(dir: &str) {
+    pub fn clean_dir(path: &Path) {
         // clear any existing output_dir
-        if PathBuf::from(dir).is_dir() {
-            fs::remove_dir_all(dir).unwrap();
+        if path.is_dir() {
+            fs::remove_dir_all(path).unwrap();
         }
-        fs::create_dir(dir).unwrap();
+        fs::create_dir(path).unwrap();
     }
 
     /// Compresses one lod layer
-    pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &str) {
+    pub fn shrink_tiles(input_files: Vec<PathBuf>, output_dir: &Path) {
         // cancel if nothing to do
         if input_files.is_empty() {
             return;
@@ -252,8 +256,9 @@ pub mod tiler {
                     //<> save file
                         let output_tile_filename =
                             output_tile_x.to_string() + "," + &output_tile_y.to_string() + ".png";
+
                         dynamic
-                            .save(output_dir.to_owned() + &output_tile_filename)
+                            .save(output_dir.join(&output_tile_filename))
                             .expect("failed to save file");
                     //<
                 };
@@ -268,7 +273,7 @@ pub mod tiler {
         image_path: &str,
         x_offset: i32,
         y_offset: i32,
-        output_dir: &str,
+        output_dir: &Path,
         tile_dimensions: u32,
     ) {
         clean_dir(output_dir);
@@ -336,10 +341,14 @@ pub mod tiler {
                         |sector_x: i32,
                          sector_y: i32,
                          tile_image: ImageBuffer<Rgba<u8>, Vec<u8>>| {
+                            // generate output PathBuf
                             let output_tile_filename =
                                 sector_x.to_string() + "," + &sector_y.to_string() + ".png";
+                            let mut new_output_dir = output_dir.clone().to_owned();
+                            new_output_dir.push(Path::new(&output_tile_filename));
+
                             tile_image
-                                .save(output_dir.to_owned() + &output_tile_filename)
+                                .save(new_output_dir)
                                 .expect("failed to save file");
                         };
 
@@ -359,19 +368,25 @@ pub mod tiler {
     /// LOD layers will be generated until the most recent one consists of 4 tiles or less
     ///
     /// Something like https://raw.githubusercontent.com/banesullivan/localtileserver/main/imgs/tile-diagram.gif
-    pub fn generate_lods(output_dir: &str) {
+    pub fn generate_lods(output_dir: &Path) {
         let mut count = 0;
-        while get_files_in_dir(&(output_dir.to_owned() + &count.to_string() + "/"), "")
-            .unwrap()
-            .len()
+        while get_files_in_dir(
+            &(output_dir.to_str().unwrap().to_owned() + &count.to_string() + "/"),
+            "",
+        )
+        .unwrap()
+        .len()
             > 4
         {
-            let files =
-                get_files_in_dir(&(output_dir.to_owned() + &count.to_string() + "/"), "").unwrap();
+            let files = get_files_in_dir(
+                &(output_dir.to_str().unwrap().to_owned() + &count.to_string() + "/"),
+                "",
+            )
+            .unwrap();
 
             count += 1;
 
-            shrink_tiles(files, &(output_dir.to_owned() + &count.to_string() + "/"));
+            shrink_tiles(files, &output_dir.join(&(count.to_string() + "/")));
         }
     }
 

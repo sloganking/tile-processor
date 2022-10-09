@@ -24,7 +24,7 @@ pub enum TopSubcommands {
     StitchImage(StitchImageArgs),
 }
 
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, Clone, clap::Parser)]
 pub struct GenTilesArgs {
     /// The image to generate tiles from.
     #[clap(long, short = 'i', help_heading = "IO")]

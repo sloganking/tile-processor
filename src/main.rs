@@ -10,19 +10,18 @@ fn print_err(err: &str) {
     std::process::exit(1);
 }
 
-fn gen_tiles_to_dir(gen_tiles_args: GenTilesArgs) {
+fn gen_tiles_to_dir(gen_tiles_args: &GenTilesArgs) {
     // get input image dimensions
-    let image_path = &gen_tiles_args.input.into_os_string().into_string().unwrap();
-    let dimensions = Reader::open(image_path).unwrap().into_dimensions().unwrap();
-
-    let output_dir = gen_tiles_args
-        .output
+    let image_path = &gen_tiles_args
+        .input
+        .clone()
         .into_os_string()
         .into_string()
         .unwrap();
+    let dimensions = Reader::open(image_path).unwrap().into_dimensions().unwrap();
 
     println!("cleaning dir...");
-    clean_dir(&output_dir);
+    clean_dir(&gen_tiles_args.output);
 
     image_to_tiles(
         image_path,
@@ -32,7 +31,7 @@ fn gen_tiles_to_dir(gen_tiles_args: GenTilesArgs) {
         gen_tiles_args
             .y_offset
             .unwrap_or_else(|| (dimensions.1 / 2).try_into().unwrap()),
-        &output_dir,
+        &gen_tiles_args.output,
         gen_tiles_args.tile_dimensions,
     );
 }
@@ -40,27 +39,18 @@ fn gen_tiles_to_dir(gen_tiles_args: GenTilesArgs) {
 fn main() {
     let args: args::Args = clap::Parser::parse();
 
-    println!("args: {:?}", args);
-
     match args.top_commands {
         TopSubcommands::GenTiles(gen_tiles_args) => {
-            gen_tiles_to_dir(gen_tiles_args);
+            gen_tiles_to_dir(&gen_tiles_args);
         }
         TopSubcommands::GenTileLayers(gen_tiles_args) => {
-            let output_dir = gen_tiles_args
-                .output
-                .clone()
-                .into_os_string()
-                .into_string()
-                .unwrap();
+            clean_dir(&gen_tiles_args.output);
 
-            clean_dir(&output_dir);
+            let mut new_gen_tiles_args = gen_tiles_args.clone();
+            new_gen_tiles_args.output.push("0/");
+            gen_tiles_to_dir(&new_gen_tiles_args);
 
-            let mut gen_tiles_args = gen_tiles_args;
-            gen_tiles_args.output.push("0/");
-            gen_tiles_to_dir(gen_tiles_args);
-
-            generate_lods(&output_dir);
+            generate_lods(&gen_tiles_args.output);
         }
         TopSubcommands::StitchImage(stitch_image_args) => {
             // Assertions
