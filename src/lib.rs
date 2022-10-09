@@ -264,12 +264,21 @@ pub mod tiler {
     }
 
     /// converts an image into image tiles of 256 pixel wide squares
-    pub fn image_to_tiles(image_path: &str, x_offset: i32, y_offset: i32, output_dir: &str) {
+    pub fn image_to_tiles(
+        image_path: &str,
+        x_offset: i32,
+        y_offset: i32,
+        output_dir: &str,
+        tile_dimensions: u32,
+    ) {
         clean_dir(output_dir);
 
+        println!("decoding image...");
         let source_image = image::open(image_path).unwrap();
-        let out_tile_width = 256;
-        let out_tile_height = 256;
+        let out_tile_width = tile_dimensions;
+        let out_tile_height = tile_dimensions;
+
+        println!("slicing tiles...");
 
         let (top_left_sector, bottom_right_sector) = get_limit_sectors(
             x_offset,
