@@ -22,6 +22,8 @@ pub enum TopSubcommands {
     GenTileLayers(GenTilesArgs),
     /// Creates single image from directory of tiles.
     StitchImage(StitchImageArgs),
+    // /// Generates layers from directory of tiles. The existing tiles will be moved into a "./0/" folder.
+    // TilesToLayers
 }
 
 #[derive(Debug, Clone, clap::Parser)]
