@@ -268,9 +268,9 @@ pub mod tiler {
         })
     }
 
-    /// converts an image into image tiles of 256 pixel wide squares
+    /// converts an image into square image tiles.
     pub fn image_to_tiles(
-        image_path: &str,
+        image_path: &Path,
         x_offset: i32,
         y_offset: i32,
         output_dir: &Path,

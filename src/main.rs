@@ -12,19 +12,16 @@ fn print_err(err: &str) -> ! {
 
 fn gen_tiles_to_dir(gen_tiles_args: &GenTilesArgs) {
     // get input image dimensions
-    let image_path = &gen_tiles_args
-        .input
-        .clone()
-        .into_os_string()
-        .into_string()
+    let dimensions = Reader::open(&gen_tiles_args.input)
+        .unwrap()
+        .into_dimensions()
         .unwrap();
-    let dimensions = Reader::open(image_path).unwrap().into_dimensions().unwrap();
 
     println!("cleaning dir...");
     clean_dir(&gen_tiles_args.output);
 
     image_to_tiles(
-        image_path,
+        &gen_tiles_args.input,
         gen_tiles_args
             .x_offset
             .unwrap_or_else(|| (dimensions.0 / 2).try_into().unwrap()),
