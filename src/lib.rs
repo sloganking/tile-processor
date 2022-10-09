@@ -341,14 +341,10 @@ pub mod tiler {
                         |sector_x: i32,
                          sector_y: i32,
                          tile_image: ImageBuffer<Rgba<u8>, Vec<u8>>| {
-                            // generate output PathBuf
                             let output_tile_filename =
                                 sector_x.to_string() + "," + &sector_y.to_string() + ".png";
-                            let mut new_output_dir = output_dir.clone().to_owned();
-                            new_output_dir.push(Path::new(&output_tile_filename));
-
                             tile_image
-                                .save(new_output_dir)
+                                .save(output_dir.join(output_tile_filename))
                                 .expect("failed to save file");
                         };
 
