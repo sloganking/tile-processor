@@ -5,7 +5,7 @@ pub mod tiler {
     };
     use std::{
         collections::HashMap,
-        fs,
+        fs, io,
         path::{Path, PathBuf},
     };
 
@@ -135,13 +135,30 @@ pub mod tiler {
         output_imgbuf
     }
 
+    // remove contents inside a directory, without deleting the directory itself.
+    fn remove_dir_contents<P: AsRef<Path>>(path: P) -> io::Result<()> {
+        for entry in fs::read_dir(path)? {
+            let path = entry.unwrap().path();
+
+            if path.is_file() {
+                fs::remove_file(path)?;
+            } else if path.is_dir() {
+                fs::remove_dir_all(path)?;
+            } else {
+                panic!("https://i.kym-cdn.com/entries/icons/original/000/013/306/2dd.jpg")
+            }
+        }
+        Ok(())
+    }
+
     /// Erases all content of an existing directory, or creates an empty new one.
     pub fn clean_dir(path: &Path) {
         // clear any existing output_dir
         if path.is_dir() {
-            fs::remove_dir_all(path).unwrap();
+            remove_dir_contents(path).unwrap();
+        } else {
+            fs::create_dir(path).unwrap();
         }
-        fs::create_dir(path).unwrap();
     }
 
     /// Compresses one lod layer
