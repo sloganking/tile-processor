@@ -3,7 +3,7 @@ use image::io::Reader;
 
 mod args;
 use args::{GenTilesArgs, TopSubcommands};
-use map_combine::tiler::*;
+use tileproc::tiler::*;
 
 fn print_err(err: &str) -> ! {
     println!("{}: {}", "error".red().bold(), err);
