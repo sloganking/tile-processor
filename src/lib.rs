@@ -308,8 +308,6 @@ pub mod tiler {
             (out_tile_width as f32, out_tile_height as f32),
             (source_image.width() as f32, source_image.height() as f32),
         );
-        // println!("top_left_sector: {:?}",top_left_sector);
-        // println!("bottom_right_sector: {:?}",bottom_right_sector);
 
         std::thread::scope(|s| {
             // for every sector in source image
@@ -351,8 +349,6 @@ pub mod tiler {
                             )
                         }
                     }
-
-                    // let tile_image = tile_image;
 
                     let file_save_closure =
                         |sector_x: i32,
