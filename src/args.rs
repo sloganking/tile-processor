@@ -1,5 +1,5 @@
 // use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{PathBuf};
 
 use clap::Subcommand;
 
@@ -22,8 +22,9 @@ pub enum TopSubcommands {
     GenTileLayers(GenTilesArgs),
     /// Creates single image from directory of tiles.
     StitchImage(StitchImageArgs),
-    // /// Generates layers from directory of tiles. The existing tiles will be moved into a "./0/" folder.
-    // TilesToLayers
+    /// Generates layers from directory of tiles. The existing tiles will be moved into a "./0/" folder.
+    /// subsuquent layers will be stored in neighboring folders.
+    TilesToLayers(TilesToLayersArgs),
 }
 
 #[derive(Debug, Clone, clap::Parser)]
@@ -58,4 +59,11 @@ pub struct StitchImageArgs {
     /// The location to save the outputed image to.
     #[clap(long, short = 'o')]
     pub output: PathBuf,
+}
+
+#[derive(Debug, clap::Parser)]
+pub struct TilesToLayersArgs {
+    /// The directory of tiles to generate layers from.
+    #[clap(long, short = 'i')]
+    pub input: PathBuf,
 }

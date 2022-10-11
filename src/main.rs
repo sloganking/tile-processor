@@ -98,5 +98,14 @@ fn main() {
                 .save(stitch_image_args.output)
                 .expect("failed to save file");
         }
+        TopSubcommands::TilesToLayers(tiles_to_layers_args) => {
+            if !tiles_to_layers_args.input.is_dir(){
+                print_err("input is not a directory.");
+            }
+            let zero_path = tiles_to_layers_args.input.join("0/");
+            clean_dir(&zero_path);
+            move_files_in_directory(&tiles_to_layers_args.input, &zero_path);
+            generate_lods(&tiles_to_layers_args.input);
+        }
     }
 }
