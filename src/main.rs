@@ -1,3 +1,5 @@
+use std::{fs, path::Path};
+
 use colored::Colorize;
 use image::io::Reader;
 
@@ -31,6 +33,23 @@ fn gen_tiles_to_dir(gen_tiles_args: &GenTilesArgs) {
         &gen_tiles_args.output,
         gen_tiles_args.tile_dimensions,
     );
+}
+
+/// Moves all files (not directories) inside one directory, into another directory. Does not delete the directory that files were moved from.
+/// Does not move files between drives.
+fn move_files_in_directory(from: &Path, to: &Path) {
+    for entry in fs::read_dir(from).unwrap() {
+        let path = entry.unwrap().path();
+
+        if path.is_file() {
+            let filename = path.file_name().unwrap();
+
+            let mut new_to = to.to_path_buf();
+            new_to.push(filename);
+
+            std::fs::rename(&path, new_to).unwrap();
+        }
+    }
 }
 
 fn main() {
