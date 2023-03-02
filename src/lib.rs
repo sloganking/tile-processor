@@ -203,7 +203,12 @@ pub mod tiler {
 
         let filenums_map = filenums_map;
 
-        std::thread::scope(|s| {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(num_cpus::get())
+            .build()
+            .unwrap();
+
+        pool.scope(|s| {
             for (x, y) in filenums_map.keys() {
                 // determine coords of output tile
                 let output_tile_x = if *x < 0 { (*x - 1) / 2 } else { *x / 2 };
@@ -280,9 +285,9 @@ pub mod tiler {
                     //<
                 };
 
-                s.spawn(move || test_closure(output_tile_x, output_tile_y));
+                s.spawn(move |_| test_closure(output_tile_x, output_tile_y));
             }
-        })
+        });
     }
 
     /// converts an image into square image tiles.
