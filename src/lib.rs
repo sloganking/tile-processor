@@ -492,9 +492,9 @@ pub mod tiler {
         // removes tiles from the cache if there are more than the limit.
         fn trim_cache(&mut self) {
             if self.cached_tiles.len() > self.cached_tile_limit {
-                self.cached_tiles.retain(|(x, y), (tile_nonce, tile)| {
+                self.cached_tiles.retain(|(x, y), (this_tile_nonce, tile)| {
                     let should_retain =
-                        self.cached_tile_limit > self.cached_tile_nonce - *tile_nonce;
+                        self.cached_tile_limit >= self.cached_tile_nonce - *this_tile_nonce;
 
                     if !should_retain {
                         // save tile to disk
@@ -532,6 +532,8 @@ pub mod tiler {
 
         println!("slicing tiles...");
 
+        // +2 because an image 1.1 tiles wide could take up 3 tiles depending on how it's aligned.
+        // Like if it started at x = -1 for instance.
         let num_tiles_to_cache = (source_image.width() / tile_dimensions) + 2;
         let mut tile_cache = TileCache::new(output_dir.to_path_buf(), num_tiles_to_cache as usize);
 
