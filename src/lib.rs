@@ -314,7 +314,12 @@ pub mod tiler {
             (source_image.width() as f32, source_image.height() as f32),
         );
 
-        std::thread::scope(|s| {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(num_cpus::get())
+            .build()
+            .unwrap();
+
+        pool.scope(|s| {
             // for every sector in source image
             for sector_y in top_left_sector.1..=bottom_right_sector.1 {
                 for sector_x in top_left_sector.0..=bottom_right_sector.0 {
@@ -368,11 +373,172 @@ pub mod tiler {
 
                     // save file
                     if !tile_empty {
-                        s.spawn(move || file_save_closure(sector_x, sector_y, tile_image));
+                        s.spawn(move |_| file_save_closure(sector_x, sector_y, tile_image));
                     }
                 }
             }
         });
+    }
+
+    /// Turns pixel coordinates into tile coordinates
+    /// an x of 0 should return an x of 0.
+    /// and x of 255 should return an x of 255.
+    /// an x of 256 should return an x of 0.
+    /// an x of 257 should return 1.
+    /// an x of -1 should return 255.
+    /// an x of -2 should return 254.
+    /// an x of -256 should return 0.
+    pub fn to_tile_location(x: i32, y: i32) -> (u32, u32) {
+        let x = if x >= 0 {
+            x % 256
+        } else {
+            let mut result = (x % 256) as i32;
+            if result < 0 {
+                result += 256;
+            }
+            result
+        };
+        let y = if y >= 0 {
+            y % 256
+        } else {
+            let mut result = (y % 256) as i32;
+            if result < 0 {
+                result += 256;
+            }
+            result
+        };
+
+        // let x = if x == 256 { 0 } else { x };
+        // let y = if y == 256 { 0 } else { y };
+
+        (x.try_into().unwrap(), y.try_into().unwrap())
+    }
+
+    struct TileCache {
+        tile_path: PathBuf,
+        cached_tiles: HashMap<(i32, i32), RgbaImage>,
+    }
+
+    impl TileCache {
+        pub fn new(tile_path: PathBuf) -> Self {
+            Self {
+                tile_path,
+                cached_tiles: HashMap::new(),
+            }
+        }
+
+        /// gets a tile from the cache or loads it from disk
+        /// creates a new tile if it doesn't exist
+        fn get_tile(&mut self, x: i32, y: i32) -> &mut RgbaImage {
+            if !self.cached_tiles.contains_key(&(x, y)) {
+                let tile_path = self.tile_path.join(format!("{},{}.png", x, y));
+                let tile = if tile_path.exists() {
+                    image::open(tile_path).unwrap().to_rgba8()
+                } else {
+                    RgbaImage::new(256, 256)
+                };
+
+                self.cached_tiles.insert((x, y), tile);
+            }
+
+            self.cached_tiles.get_mut(&(x, y)).unwrap()
+        }
+
+        /// saves all tiles in the cache to disk
+        fn save_all(&self) {
+            for ((x, y), tile) in &self.cached_tiles {
+                let tile_path = self.tile_path.join(format!("{},{}.png", x, y));
+                tile.save(tile_path).unwrap();
+            }
+        }
+
+        fn put_pixel(&mut self, x: i32, y: i32, pixel: Rgba<u8>) {
+            // let x = -256;
+
+            // println!("pixel x: {} pixel y: {}", x, y);
+            let mut tile_x = x / 256;
+            let mut tile_y = y / 256;
+
+            // offset for negatives.
+            if x < 0 {
+                tile_x -= 1;
+            }
+            if y < 0 {
+                tile_y -= 1;
+            }
+
+            // println!("tile_x: {} tile_y: {}", tile_x, tile_y);
+            let tile = self.get_tile(tile_x, tile_y);
+            // let tile_x = if x < 0 { 256 + (x % 256) } else { x % 256 };
+            // let tile_y = if y < 0 { 256 + (y % 256) } else { y % 256 };
+
+            // println!("tile_x: {} tile_y: {}", tile_x, tile_y);
+
+            // let tile_x_u32: u32 = tile_x.try_into().unwrap();
+            // let tile_y_u32: u32 = tile_y.try_into().unwrap();
+
+            // println!("wrapping_rem: {}", x.wrapping_rem(256));
+
+            // let new_x1 = x % 256;
+            // let new_y1 = y % 256;
+            // println!("{} {}", new_x1, new_y1);
+
+            // let new_x2 = new_x1.abs() as u32;
+            // let new_y2 = new_y1.abs() as u32;
+            // println!("new_x2: {} new_y2: {}", new_x2, new_y2);
+
+            //
+
+            // let x = -256;
+
+            // println!("input_x: {} input_y: {}", x, y);
+
+            let (tile_pixel_x, tile_pixel_y) = to_tile_location(x, y);
+            // println!(
+            //     "tile_pixel_x: {} tile_pixel_y: {}",
+            //     tile_pixel_x, tile_pixel_y
+            // );
+
+            // panic!();
+
+            tile.put_pixel(tile_pixel_x, tile_pixel_y, pixel);
+        }
+
+        fn get_pixel(&mut self, x: i32, y: i32) -> Rgba<u8> {
+            let tile = self.get_tile(x / 256, y / 256);
+            tile.get_pixel((x % 256) as u32, (y % 256) as u32).clone()
+        }
+    }
+
+    /// converts an image into square image tiles.
+    /// Iterates through pixels in image and saves them to tiles
+    pub fn image_to_tiles_tile_cache(
+        image_path: &Path,
+        x_offset: i32,
+        y_offset: i32,
+        output_dir: &Path,
+        tile_dimensions: u32,
+    ) {
+        clean_dir(output_dir);
+
+        // print image offsets
+        println!("x offset: {}", x_offset);
+        println!("y offset: {}", y_offset);
+
+        println!("decoding image...");
+        let source_image = image::open(image_path).unwrap();
+        let out_tile_width = tile_dimensions;
+        let out_tile_height = tile_dimensions;
+
+        println!("slicing tiles...");
+
+        let mut tile_cache = TileCache::new(output_dir.to_path_buf());
+
+        // iterate though pixels in image
+        for (pix_x, pix_y, pixel) in source_image.pixels() {
+            tile_cache.put_pixel(pix_x as i32 - x_offset, pix_y as i32 - y_offset, pixel)
+        }
+        tile_cache.save_all();
     }
 
     /// Generates LOD layers

@@ -22,7 +22,7 @@ fn gen_tiles_to_dir(gen_tiles_args: &GenTilesArgs) {
     println!("cleaning dir...");
     clean_dir(&gen_tiles_args.output);
 
-    image_to_tiles(
+    image_to_tiles_tile_cache(
         &gen_tiles_args.input,
         gen_tiles_args
             .x_offset
@@ -53,6 +53,10 @@ fn move_files_in_directory(from: &Path, to: &Path) {
 }
 
 fn main() {
+    for i in (-1000..0).rev() {
+        println!("i: {} --- (i % 256): {:?}", i, to_tile_location(i, 0));
+    }
+
     let args: args::Args = clap::Parser::parse();
 
     match args.top_commands {
@@ -99,7 +103,7 @@ fn main() {
                 .expect("failed to save file");
         }
         TopSubcommands::TilesToLayers(tiles_to_layers_args) => {
-            if !tiles_to_layers_args.input.is_dir(){
+            if !tiles_to_layers_args.input.is_dir() {
                 print_err("input is not a directory.");
             }
             let zero_path = tiles_to_layers_args.input.join("0/");
