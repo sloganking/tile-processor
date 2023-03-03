@@ -484,8 +484,9 @@ pub mod tiler {
         }
 
         fn get_pixel(&mut self, x: i32, y: i32) -> Rgba<u8> {
-            let tile = self.get_tile(x / 256, y / 256);
-            tile.get_pixel((x % 256) as u32, (y % 256) as u32).clone()
+            // let tile = self.get_tile(x / 256, y / 256);
+            // tile.get_pixel((x % 256) as u32, (y % 256) as u32).clone()
+            todo!();
         }
 
         // removes tiles from the cache if there are more than the limit.
