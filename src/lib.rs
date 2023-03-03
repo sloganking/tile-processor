@@ -388,6 +388,7 @@ pub mod tiler {
     /// an x of -1 should return 255.
     /// an x of -2 should return 254.
     /// an x of -256 should return 0.
+    /// an x of -257 should return 255.
     pub fn to_tile_location(x: i32, y: i32) -> (u32, u32) {
         let x = if x >= 0 {
             x % 256
@@ -408,22 +409,33 @@ pub mod tiler {
             result
         };
 
-        // let x = if x == 256 { 0 } else { x };
-        // let y = if y == 256 { 0 } else { y };
-
         (x.try_into().unwrap(), y.try_into().unwrap())
     }
 
     struct TileCache {
         tile_path: PathBuf,
-        cached_tiles: HashMap<(i32, i32), RgbaImage>,
+        cached_tiles: HashMap<(i32, i32), (usize, RgbaImage)>,
+        cached_tile_limit: usize,
+        cached_tile_nonce: usize,
     }
 
     impl TileCache {
-        pub fn new(tile_path: PathBuf) -> Self {
+        pub fn new(tile_path: PathBuf, cached_tile_limit: usize) -> Self {
             Self {
                 tile_path,
                 cached_tiles: HashMap::new(),
+                cached_tile_limit,
+                cached_tile_nonce: 0,
+            }
+        }
+
+        fn add_tile_to_cache(&mut self, tile: RgbaImage, x: i32, y: i32) {
+            println!("tile cache size: {}", self.cached_tiles.len());
+            if !self.cached_tiles.contains_key(&(x, y)) {
+                self.cached_tiles
+                    .insert((x, y), (self.cached_tile_nonce, tile));
+                self.cached_tile_nonce += 1;
+                self.trim_cache();
             }
         }
 
@@ -438,24 +450,21 @@ pub mod tiler {
                     RgbaImage::new(256, 256)
                 };
 
-                self.cached_tiles.insert((x, y), tile);
+                self.add_tile_to_cache(tile, x, y);
             }
 
-            self.cached_tiles.get_mut(&(x, y)).unwrap()
+            &mut self.cached_tiles.get_mut(&(x, y)).unwrap().1
         }
 
         /// saves all tiles in the cache to disk
         fn save_all(&self) {
-            for ((x, y), tile) in &self.cached_tiles {
-                let tile_path = self.tile_path.join(format!("{},{}.png", x, y));
-                tile.save(tile_path).unwrap();
+            for ((x, y), (tile_nonce, tile)) in &self.cached_tiles {
+                let this_tile_path = self.tile_path.join(format!("{},{}.png", x, y));
+                tile.save(this_tile_path).unwrap();
             }
         }
 
         fn put_pixel(&mut self, x: i32, y: i32, pixel: Rgba<u8>) {
-            // let x = -256;
-
-            // println!("pixel x: {} pixel y: {}", x, y);
             let mut tile_x = x / 256;
             let mut tile_y = y / 256;
 
@@ -467,39 +476,9 @@ pub mod tiler {
                 tile_y -= 1;
             }
 
-            // println!("tile_x: {} tile_y: {}", tile_x, tile_y);
             let tile = self.get_tile(tile_x, tile_y);
-            // let tile_x = if x < 0 { 256 + (x % 256) } else { x % 256 };
-            // let tile_y = if y < 0 { 256 + (y % 256) } else { y % 256 };
-
-            // println!("tile_x: {} tile_y: {}", tile_x, tile_y);
-
-            // let tile_x_u32: u32 = tile_x.try_into().unwrap();
-            // let tile_y_u32: u32 = tile_y.try_into().unwrap();
-
-            // println!("wrapping_rem: {}", x.wrapping_rem(256));
-
-            // let new_x1 = x % 256;
-            // let new_y1 = y % 256;
-            // println!("{} {}", new_x1, new_y1);
-
-            // let new_x2 = new_x1.abs() as u32;
-            // let new_y2 = new_y1.abs() as u32;
-            // println!("new_x2: {} new_y2: {}", new_x2, new_y2);
-
-            //
-
-            // let x = -256;
-
-            // println!("input_x: {} input_y: {}", x, y);
 
             let (tile_pixel_x, tile_pixel_y) = to_tile_location(x, y);
-            // println!(
-            //     "tile_pixel_x: {} tile_pixel_y: {}",
-            //     tile_pixel_x, tile_pixel_y
-            // );
-
-            // panic!();
 
             tile.put_pixel(tile_pixel_x, tile_pixel_y, pixel);
         }
@@ -507,6 +486,26 @@ pub mod tiler {
         fn get_pixel(&mut self, x: i32, y: i32) -> Rgba<u8> {
             let tile = self.get_tile(x / 256, y / 256);
             tile.get_pixel((x % 256) as u32, (y % 256) as u32).clone()
+        }
+
+        // removes tiles from the cache if there are more than the limit.
+        fn trim_cache(&mut self) {
+            if self.cached_tiles.len() > self.cached_tile_limit {
+                self.cached_tiles.retain(|(x, y), (tile_nonce, tile)| {
+                    let should_retain =
+                        self.cached_tile_limit > self.cached_tile_nonce - *tile_nonce;
+
+                    if !should_retain {
+                        // save tile to disk
+                        let this_tile_path = self.tile_path.join(format!("{},{}.png", x, y));
+                        tile.save(this_tile_path).unwrap();
+
+                        // remove tile from cache
+                        return false;
+                    }
+                    should_retain
+                });
+            }
         }
     }
 
@@ -532,7 +531,8 @@ pub mod tiler {
 
         println!("slicing tiles...");
 
-        let mut tile_cache = TileCache::new(output_dir.to_path_buf());
+        let num_tiles_to_cache = (source_image.width() / tile_dimensions) + 2;
+        let mut tile_cache = TileCache::new(output_dir.to_path_buf(), num_tiles_to_cache as usize);
 
         // iterate though pixels in image
         for (pix_x, pix_y, pixel) in source_image.pixels() {
