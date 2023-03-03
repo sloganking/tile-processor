@@ -53,10 +53,6 @@ fn move_files_in_directory(from: &Path, to: &Path) {
 }
 
 fn main() {
-    for i in (-1000..0).rev() {
-        println!("i: {} --- (i % 256): {:?}", i, to_tile_location(i, 0));
-    }
-
     let args: args::Args = clap::Parser::parse();
 
     match args.top_commands {
