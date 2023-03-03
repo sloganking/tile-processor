@@ -460,10 +460,10 @@ pub mod tiler {
             let mut tile_y = y / 256;
 
             // offset for negatives.
-            if x < 0 {
+            if x % 256 != 0 && x < 0 {
                 tile_x -= 1;
             }
-            if y < 0 {
+            if y % 256 != 0 && y < 0 {
                 tile_y -= 1;
             }
 
