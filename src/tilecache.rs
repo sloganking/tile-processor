@@ -15,7 +15,7 @@ pub fn to_tile_location(x: i32, y: i32) -> (u32, u32) {
     let x = if x >= 0 {
         x % 256
     } else {
-        let mut result = (x % 256) as i32;
+        let mut result = x % 256;
         if result < 0 {
             result += 256;
         }
@@ -24,7 +24,7 @@ pub fn to_tile_location(x: i32, y: i32) -> (u32, u32) {
     let y = if y >= 0 {
         y % 256
     } else {
-        let mut result = (y % 256) as i32;
+        let mut result = y % 256;
         if result < 0 {
             result += 256;
         }
@@ -53,9 +53,8 @@ impl TileCache {
 
     fn add_tile_to_cache(&mut self, tile: RgbaImage, x: i32, y: i32) {
         println!("tile cache size: {}", self.cached_tiles.len());
-        if !self.cached_tiles.contains_key(&(x, y)) {
-            self.cached_tiles
-                .insert((x, y), (self.cached_tile_nonce, tile));
+        if let std::collections::hash_map::Entry::Vacant(e) = self.cached_tiles.entry((x, y)) {
+            e.insert((self.cached_tile_nonce, tile));
             self.cached_tile_nonce += 1;
             self.trim_cache();
         }
@@ -65,7 +64,7 @@ impl TileCache {
     /// creates a new tile if it doesn't exist
     fn get_tile(&mut self, x: i32, y: i32) -> &mut RgbaImage {
         if !self.cached_tiles.contains_key(&(x, y)) {
-            let tile_path = self.tile_path.join(format!("{},{}.png", x, y));
+            let tile_path = self.tile_path.join(format!("{x},{y}.png"));
             let tile = if tile_path.exists() {
                 image::open(tile_path).unwrap().to_rgba8()
             } else {
@@ -80,8 +79,8 @@ impl TileCache {
 
     /// saves all tiles in the cache to disk
     pub fn save_all(&self) {
-        for ((x, y), (tile_nonce, tile)) in &self.cached_tiles {
-            let this_tile_path = self.tile_path.join(format!("{},{}.png", x, y));
+        for ((x, y), (_tile_nonce, tile)) in &self.cached_tiles {
+            let this_tile_path = self.tile_path.join(format!("{x},{y}.png"));
             tile.save(this_tile_path).unwrap();
         }
     }
@@ -105,7 +104,7 @@ impl TileCache {
         tile.put_pixel(tile_pixel_x, tile_pixel_y, pixel);
     }
 
-    fn get_pixel(&mut self, x: i32, y: i32) -> Rgba<u8> {
+    fn get_pixel(&mut self, _x: i32, _y: i32) -> Rgba<u8> {
         // let tile = self.get_tile(x / 256, y / 256);
         // tile.get_pixel((x % 256) as u32, (y % 256) as u32).clone()
         todo!();
@@ -120,7 +119,7 @@ impl TileCache {
 
                 if !should_retain {
                     // save tile to disk
-                    let this_tile_path = self.tile_path.join(format!("{},{}.png", x, y));
+                    let this_tile_path = self.tile_path.join(format!("{x},{y}.png"));
                     tile.save(this_tile_path).unwrap();
 
                     // remove tile from cache

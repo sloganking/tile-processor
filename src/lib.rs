@@ -244,7 +244,7 @@ pub mod tiler {
 
                                 match &filenums_map.get(&(real_x, real_y)) {
                                     Some(path) => {
-                                        let input_tile_img = image::open(&path).unwrap();
+                                        let input_tile_img = image::open(path).unwrap();
 
                                         // transfer image
                                         for x in 0..tile_dimensions.0 {
@@ -284,7 +284,7 @@ pub mod tiler {
                             output_tile_x.to_string() + "," + &output_tile_y.to_string() + ".png";
 
                         dynamic
-                            .save(output_dir.join(&output_tile_filename))
+                            .save(output_dir.join(output_tile_filename))
                             .expect("failed to save file");
                     //<
                 };
@@ -396,13 +396,13 @@ pub mod tiler {
         clean_dir(output_dir);
 
         // print image offsets
-        println!("x offset: {}", x_offset);
-        println!("y offset: {}", y_offset);
+        println!("x offset: {x_offset}");
+        println!("y offset: {y_offset}");
 
         println!("decoding image...");
         let source_image = image::open(image_path).unwrap();
-        let out_tile_width = tile_dimensions;
-        let out_tile_height = tile_dimensions;
+        let _out_tile_width = tile_dimensions;
+        let _out_tile_height = tile_dimensions;
 
         println!("slicing tiles...");
 
@@ -455,7 +455,7 @@ pub mod tiler {
         let screen_point_coords = (x, y);
 
         // get sector x
-        let tile_world_x_size = tile_dimensions.0 as f32 * two.powf(lod as f32);
+        let tile_world_x_size = tile_dimensions.0 * two.powf(lod as f32);
         let screen_point_sector_x = if screen_point_coords.0 < 0.0 {
             (screen_point_coords.0 / tile_world_x_size) as i32 - 1
         } else {
@@ -463,7 +463,7 @@ pub mod tiler {
         };
 
         // get sector y
-        let tile_world_y_size = tile_dimensions.1 as f32 * two.powf(lod as f32);
+        let tile_world_y_size = tile_dimensions.1 * two.powf(lod as f32);
         let screen_point_sector_y = if screen_point_coords.1 < 0.0 {
             (screen_point_coords.1 / tile_world_y_size) as i32 - 1
         } else {
