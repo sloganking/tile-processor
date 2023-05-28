@@ -384,23 +384,18 @@ pub mod tiler {
     /// Something like https://raw.githubusercontent.com/banesullivan/localtileserver/main/imgs/tile-diagram.gif
     pub fn generate_lods(output_dir: &Path) {
         let mut count = 0;
-        while get_files_in_dir(
-            &(output_dir.to_str().unwrap().to_owned() + &count.to_string() + "/"),
-            "",
-        )
-        .unwrap()
-        .len()
-            > 4
-        {
-            let files = get_files_in_dir(
-                &(output_dir.to_str().unwrap().to_owned() + &count.to_string() + "/"),
-                "",
-            )
-            .unwrap();
+        while {
+            // get num files in dir
+            let dirs = fs::read_dir(output_dir.join(count.to_string())).unwrap();
+            let dirs: Vec<PathBuf> = dirs.map(|dir| dir.unwrap().path()).collect();
+            dirs.len() > 4
+        } {
+            // get vec of files in dir
+            let dirs = fs::read_dir(output_dir.join(count.to_string())).unwrap();
+            let dirs: Vec<PathBuf> = dirs.map(|dir| dir.unwrap().path()).collect();
 
             count += 1;
-
-            shrink_tiles(files, &output_dir.join(&(count.to_string() + "/")));
+            shrink_tiles(dirs, &output_dir.join(count.to_string()));
         }
     }
 
