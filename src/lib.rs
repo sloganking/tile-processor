@@ -135,7 +135,7 @@ pub mod tiler {
         output_imgbuf
     }
 
-    // remove contents inside a directory, without deleting the directory itself.
+    /// remove contents inside a directory, without deleting the directory itself.
     fn remove_dir_contents<P: AsRef<Path>>(path: P) -> io::Result<()> {
         for entry in fs::read_dir(path)? {
             let path = entry.unwrap().path();
