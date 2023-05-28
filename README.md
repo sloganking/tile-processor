@@ -5,5 +5,5 @@ Beyond a certain resolution, images may not be viewable due to exhausting RAM, o
 This is a problem fixed by tile image viewers. This repository does the work of prepairing tiles for those viewers.
 
 
-An example of how a large image can be rendered at various levels of details (LODs)
+An example of how a large image can be rendered at various levels of detail (LOD)
 ![](https://raw.githubusercontent.com/banesullivan/localtileserver/main/imgs/tile-diagram.gif)
