@@ -25,28 +25,26 @@ pub mod tiler {
 
     /// Returns a list of all files in a directory and it's subdirectories
     pub fn get_files_in_dir(path: &str, filetype: &str) -> Result<Vec<PathBuf>, GlobError> {
-        //> get list of all files and dirs in path, using glob
-            let mut paths = Vec::new();
+        let mut paths = Vec::new();
 
-            let mut potential_slash = "";
-            if PathBuf::from(path).is_dir() && !path.ends_with('/') {
-                potential_slash = "/";
-            }
+        let mut potential_slash = "";
+        if PathBuf::from(path).is_dir() && !path.ends_with('/') {
+            potential_slash = "/";
+        }
 
-            let search_params = String::from(path) + potential_slash + "**/*" + filetype;
+        let search_params = String::from(path) + potential_slash + "**/*" + filetype;
 
-            for entry in glob(&search_params).expect("Failed to read glob pattern") {
-                match entry {
-                    Ok(path) => {
-                        paths.push(path);
-                    }
-                    Err(e) => return Err(e),
+        for entry in glob(&search_params).expect("Failed to read glob pattern") {
+            match entry {
+                Ok(path) => {
+                    paths.push(path);
                 }
+                Err(e) => return Err(e),
             }
+        }
 
-        //<> filter out directories
-            let paths = paths.into_iter().filter(|e| e.is_file());
-        //<
+        // filter out directories
+        let paths = paths.into_iter().filter(|e| e.is_file());
 
         let paths: Vec<PathBuf> = paths.into_iter().collect();
         Ok(paths)
@@ -181,24 +179,21 @@ pub mod tiler {
         let tile_dimensions = tile_dimensions;
 
         for file in &input_files {
-            //> fill filename_and_numbers_vec
-                let mut filename_and_numbers_vec: Vec<FilenameAndNumbers> = Vec::new();
+            let mut filename_and_numbers_vec: Vec<FilenameAndNumbers> = Vec::new();
 
-                let file_name = file.file_stem().unwrap().to_str().unwrap();
-                let split: Vec<&str> = file_name.split(',').collect();
+            let file_name = file.file_stem().unwrap().to_str().unwrap();
+            let split: Vec<&str> = file_name.split(',').collect();
 
-                let x: i32 = split[0].parse().unwrap();
-                let z: i32 = split[1].parse().unwrap();
+            let x: i32 = split[0].parse().unwrap();
+            let z: i32 = split[1].parse().unwrap();
 
-                filename_and_numbers_vec.push(FilenameAndNumbers {
-                    file_name: file.clone(),
-                    x,
-                    z,
-                });
+            filename_and_numbers_vec.push(FilenameAndNumbers {
+                file_name: file.clone(),
+                x,
+                z,
+            });
 
-            //<> fill hashmap
-                filenums_map.insert((x, z), file);
-            //<
+            filenums_map.insert((x, z), file);
         }
 
         let filenums_map = filenums_map;
@@ -222,7 +217,6 @@ pub mod tiler {
                 // mark output image tile as rendered
                 rendered_output_tiles_map.insert((output_tile_x, output_tile_y), true);
 
-                //
                 let test_closure = |output_tile_x: i32, output_tile_y: i32| {
                     let output_tile_x = output_tile_x;
                     let output_tile_y = output_tile_y;
@@ -231,58 +225,56 @@ pub mod tiler {
                     let mut output_imgbuf =
                         RgbaImage::new(2 * tile_dimensions.0, 2 * tile_dimensions.1);
 
-                    //> convert 4 images into one big image
-                        // for the 4 sectors of the new tile
-                        for x_sector in 0..=1 {
-                            for y_sector in 0..=1 {
-                                let real_x = output_tile_x * 2 + x_sector;
-                                let real_y = output_tile_y * 2 + y_sector;
+                    // convert 4 images into one big image
+                    // for the 4 sectors of the new tile
+                    for x_sector in 0..=1 {
+                        for y_sector in 0..=1 {
+                            let real_x = output_tile_x * 2 + x_sector;
+                            let real_y = output_tile_y * 2 + y_sector;
 
-                                match &filenums_map.get(&(real_x, real_y)) {
-                                    Some(path) => {
-                                        let input_tile_img = image::open(&path).unwrap();
+                            match &filenums_map.get(&(real_x, real_y)) {
+                                Some(path) => {
+                                    let input_tile_img = image::open(&path).unwrap();
 
-                                        // transfer image
-                                        for x in 0..tile_dimensions.0 {
-                                            for y in 0..tile_dimensions.1 {
-                                                // get pixel from tile image
-                                                let pixel = input_tile_img.get_pixel(x, y);
+                                    // transfer image
+                                    for x in 0..tile_dimensions.0 {
+                                        for y in 0..tile_dimensions.1 {
+                                            // get pixel from tile image
+                                            let pixel = input_tile_img.get_pixel(x, y);
 
-                                                // calculate where pixel should go on output image
-                                                let output_pixel_x =
-                                                    x as i32 + (x_sector * tile_dimensions.0 as i32);
-                                                let output_pixel_z =
-                                                    y as i32 + (y_sector * tile_dimensions.1 as i32);
+                                            // calculate where pixel should go on output image
+                                            let output_pixel_x =
+                                                x as i32 + (x_sector * tile_dimensions.0 as i32);
+                                            let output_pixel_z =
+                                                y as i32 + (y_sector * tile_dimensions.1 as i32);
 
-                                                output_imgbuf.put_pixel(
-                                                    output_pixel_x.try_into().unwrap(),
-                                                    output_pixel_z.try_into().unwrap(),
-                                                    pixel,
-                                                )
-                                            }
+                                            output_imgbuf.put_pixel(
+                                                output_pixel_x.try_into().unwrap(),
+                                                output_pixel_z.try_into().unwrap(),
+                                                pixel,
+                                            )
                                         }
                                     }
-                                    None => continue,
                                 }
+                                None => continue,
                             }
                         }
+                    }
 
-                    //<> resize output image
-                        let mut dynamic = DynamicImage::ImageRgba8(output_imgbuf);
-                        dynamic = dynamic.resize(
-                            dynamic.dimensions().0 / 2,
-                            dynamic.dimensions().1 / 2,
-                            FilterType::Lanczos3,
-                        );
+                    // resize output image
+                    let mut dynamic = DynamicImage::ImageRgba8(output_imgbuf);
+                    dynamic = dynamic.resize(
+                        dynamic.dimensions().0 / 2,
+                        dynamic.dimensions().1 / 2,
+                        FilterType::Lanczos3,
+                    );
 
-                    //<> save file
-                        let output_tile_filename =
-                            output_tile_x.to_string() + "," + &output_tile_y.to_string() + ".png";
-
-                        dynamic
-                            .save(output_dir.join(&output_tile_filename))
-                            .expect("failed to save file");
-                    //<
+                    // save file
+                    let output_tile_filename =
+                        output_tile_x.to_string() + "," + &output_tile_y.to_string() + ".png";
+                    dynamic
+                        .save(output_dir.join(&output_tile_filename))
+                        .expect("failed to save file");
                 };
 
                 s.spawn(move |_| test_closure(output_tile_x, output_tile_y));
