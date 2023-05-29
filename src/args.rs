@@ -1,5 +1,5 @@
 // use std::ffi::OsString;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 use clap::Subcommand;
 
