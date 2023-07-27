@@ -1,3 +1,5 @@
+pub mod args;
+
 pub mod tiler {
     use glob::{glob, GlobError};
     use image::{
