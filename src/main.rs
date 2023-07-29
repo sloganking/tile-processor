@@ -1,38 +1,13 @@
 use std::{fs, path::Path};
 
 use colored::Colorize;
-use image::io::Reader;
 
-mod args;
-use args::{GenTilesArgs, TopSubcommands};
+use tileproc::args::*;
 use tileproc::tiler::*;
 
 fn print_err(err: &str) -> ! {
     println!("{}: {}", "error".red().bold(), err);
     std::process::exit(1);
-}
-
-fn gen_tiles_to_dir(gen_tiles_args: &GenTilesArgs) {
-    // get input image dimensions
-    let dimensions = Reader::open(&gen_tiles_args.input)
-        .unwrap()
-        .into_dimensions()
-        .unwrap();
-
-    println!("cleaning dir...");
-    clean_dir(&gen_tiles_args.output);
-
-    image_to_tiles(
-        &gen_tiles_args.input,
-        gen_tiles_args
-            .x_offset
-            .unwrap_or_else(|| (dimensions.0 / 2).try_into().unwrap()),
-        gen_tiles_args
-            .y_offset
-            .unwrap_or_else(|| (dimensions.1 / 2).try_into().unwrap()),
-        &gen_tiles_args.output,
-        gen_tiles_args.tile_dimensions,
-    );
 }
 
 /// Moves all files (not directories) inside one directory, into another directory. Does not delete the directory that files were moved from.
@@ -53,7 +28,7 @@ fn move_files_in_directory(from: &Path, to: &Path) {
 }
 
 fn main() {
-    let args: args::Args = clap::Parser::parse();
+    let args: Args = clap::Parser::parse();
 
     match args.top_commands {
         TopSubcommands::GenTiles(gen_tiles_args) => {

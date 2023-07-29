@@ -3,13 +3,16 @@ pub mod args;
 pub mod tiler {
     use glob::{glob, GlobError};
     use image::{
-        imageops::FilterType, DynamicImage, GenericImageView, ImageBuffer, Rgba, RgbaImage,
+        imageops::FilterType, io::Reader, DynamicImage, GenericImageView, ImageBuffer, Rgba,
+        RgbaImage,
     };
     use std::{
         collections::HashMap,
         fs, io,
         path::{Path, PathBuf},
     };
+
+    use crate::args::GenTilesArgs;
 
     #[derive(Debug)]
     struct Bounds {
@@ -432,5 +435,28 @@ pub mod tiler {
         );
 
         (top_left_sector, bottom_right_sector)
+    }
+
+    pub fn gen_tiles_to_dir(gen_tiles_args: &GenTilesArgs) {
+        // get input image dimensions
+        let dimensions = Reader::open(&gen_tiles_args.input)
+            .unwrap()
+            .into_dimensions()
+            .unwrap();
+
+        println!("cleaning dir...");
+        clean_dir(&gen_tiles_args.output);
+
+        image_to_tiles(
+            &gen_tiles_args.input,
+            gen_tiles_args
+                .x_offset
+                .unwrap_or_else(|| (dimensions.0 / 2).try_into().unwrap()),
+            gen_tiles_args
+                .y_offset
+                .unwrap_or_else(|| (dimensions.1 / 2).try_into().unwrap()),
+            &gen_tiles_args.output,
+            gen_tiles_args.tile_dimensions,
+        );
     }
 }
